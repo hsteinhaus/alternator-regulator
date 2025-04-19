@@ -6,7 +6,10 @@ substitutions:
 
 
 external_components:
+  - source: github://Fabian-Schmidt/esphome-victron_ble
   - source: github://hsteinhaus/esphome-m5stack-pps-module@master
+    refresh: 0s
+  - source: github://hsteinhaus/esphome-gppid@master
     refresh: 0s
 
 esphome:
@@ -22,9 +25,6 @@ esphome:
   project:
     name: "hsteinhaus.alternator_regulator"
     version: "0.1"
-  # libraries:
-  #   - "Wire"
-  #   - "ArduinoJson"
   on_boot:
     then:
       # - lambda:
@@ -42,6 +42,7 @@ esphome:
 
 esp32:
   board: m5stack-core-esp32
+  flash_size: 8MB
   framework:
     type: arduino
   # framework:
@@ -61,10 +62,9 @@ web_server:
   local: true
   version: 3
 
-
 # Enable logging
 logger:
-  level: DEBUG
+  level: INFO
 
 # Enable Home Assistant API
 api:
@@ -77,12 +77,22 @@ ota:
 
 wifi:
   reboot_timeout: 0s
-  domain: .devices.home
+  domain: .wifi.home
   networks:
-    - ssid: !secret wifi_ssid
-      password: !secret wifi_password
-#    - ssid: venus-HQ2122TH79M-78b
-#      password: yxg86aef
+    - ssid: !secret wifi_ssid_02
+      password: !secret wifi_password_02
+
+esp32_ble_tracker:
+  max_connections: 3
+  scan_parameters:
+    interval: 10ms
+    window: 10ms
+    active: false
+
+victron_ble:
+  - id: MySmartShunt
+    mac_address: ${smart_shunt_mac_address}
+    bindkey: ${smart_shunt_encryption_key}
 
 ##############################################################################
 
@@ -154,6 +164,7 @@ sensor:
       falling_edge: INCREMENT
     update_interval: .5s
     filters:
+    - multiply: 0.25
     - or:
       - throttle: 5s
       - delta: 1%
@@ -184,10 +195,14 @@ sensor:
     pin: GPIO35
     id: v_alt
     name: "Alternator voltage"
-    attenuation: auto
-    update_interval: 1s
+    attenuation: 6dB
+    samples: 1
+    update_interval: 10ms
     filters:
-      - multiply: 11.0  # voltage divider 1k/11k
+      - multiply: 22.78  # voltage divider 1k/22k
+      - sliding_window_moving_average:
+         send_every: 10
+         window_size: 10
 
 number:
   - platform: m5stack_pps
@@ -205,8 +220,6 @@ switch:
       id: oe_switch
       web_server:
         sorting_weight: 90
-
-
 
 
 ##############################################################################
@@ -233,6 +246,7 @@ color:
     red: 0%
     green: 0%
     blue: 0%
+
 
 light:
   - platform: monochromatic
