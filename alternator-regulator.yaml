@@ -1,0 +1,409 @@
+substitutions:
+  # Set the MAC addresses and encryption keys of your Victron devices here
+  # The values here are examples and cannot work for your devices
+  smart_shunt_mac_address: cb:8a:4f:19:e7:83
+  smart_shunt_encryption_key: 1432dc30073bcee92f95709d9d200205
+
+
+external_components:
+  - source: github://hsteinhaus/esphome-m5stack-pps-module@master
+    refresh: 0s
+
+esphome:
+  name: alternator-regulator
+  friendly_name: "Alternator regulator based on M5Stack and ESPHome"
+  platformio_options:
+    upload_speed: 2000000
+    board_build.f_cpu: 240000000L
+    board_build.f_flash: 80000000L
+    board_build.arduino.memory_type: qio_qspi
+  # build_flags:
+    #   - -DCONFIG_ARDUINO_LOOP_STACK_SIZE=32768
+  project:
+    name: "hsteinhaus.alternator_regulator"
+    version: "0.1"
+  # libraries:
+  #   - "Wire"
+  #   - "ArduinoJson"
+  on_boot:
+    then:
+      # - lambda:
+      #     App.set_loop_interval(0);
+      - sensor.template.publish:
+          id: v_bat
+          state: 27.0
+      - sensor.template.publish:
+          id: i_bat
+          state: 0.0
+      - sensor.template.publish:
+          id: soc
+          state: 78.5
+
+
+esp32:
+  board: m5stack-core-esp32
+  framework:
+    type: arduino
+  # framework:
+  #   type: esp-idf
+  #   version: latest
+  #   sdkconfig_options:
+  #     # ESP32
+  #     CONFIG_ESP32_DEFAULT_CPU_FREQ_240: "y"
+  #     CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ: "240"
+
+debug:
+  update_interval: 5s
+
+web_server:
+  port: 80
+  ota: true
+  local: true
+  version: 3
+
+
+# Enable logging
+logger:
+  level: DEBUG
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret api_password
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  reboot_timeout: 0s
+  domain: .devices.home
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+#    - ssid: venus-HQ2122TH79M-78b
+#      password: yxg86aef
+
+##############################################################################
+
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+#  miso_pin: 19
+  interface: spi3
+
+i2c:
+  id: bus_a
+  frequency: 400kHz
+  scan: False
+  sda: GPIO21
+  scl: GPIO22
+
+one_wire:
+  - platform: gpio
+    pin: GPIO19
+
+# GPIO pin of the display backlight
+output:
+  - platform: ledc
+    pin: 32
+    id: gpio_32_backlight_pwm
+
+#############################################################################
+
+m5stack_pps:
+  i2c_id: bus_a
+  id: pps1
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    loop_time:
+      name: "Loop Time"
+  - platform: template
+    name: "Battery voltage"
+    id: v_bat
+  - platform: template
+    name: "Battery current"
+    id: i_bat
+  - platform: template
+    name: "Battery SoC"
+    id: soc
+
+  - platform: dallas_temp
+    address: 0xd30723c061986428
+    id: t_diodes
+    name: Diode temp
+    update_interval: 10s
+  - platform: dallas_temp
+    address: 0xce0b244223798b28
+    id: t_case
+    update_interval: 10s
+    name: Case temp
+
+  - platform: pulse_counter
+    pin: GPIO5
+    name: "RPM"
+    id: rpm
+    unit_of_measurement: rpm  # counter is already in pulses per minute
+    accuracy_decimals: 0
+    use_pcnt: True
+    count_mode:
+      rising_edge: DISABLE
+      falling_edge: INCREMENT
+    update_interval: .5s
+    filters:
+    - or:
+      - throttle: 5s
+      - delta: 1%
+    # on_value:
+    #   then:
+    #     - lvgl.label.update:
+    #         id: rpm_label
+    #         text:
+    #           format: "Alternator rpm: %.0f"
+    #           args: x
+
+  - platform: m5stack_pps
+    m5stack_pps: pps1
+    mode:
+      id: current_mode
+      name: "Output mode"
+    voltage:
+      id: actual_voltage
+      name: "Field voltage"
+    current:
+      id: actual_current
+      name: "Field current"
+    power:
+      id: actual_power
+      name: "Field power"
+
+  - platform: adc
+    pin: GPIO35
+    id: v_alt
+    name: "Alternator voltage"
+    attenuation: auto
+    update_interval: 1s
+    filters:
+      - multiply: 11.0  # voltage divider 1k/11k
+
+number:
+  - platform: m5stack_pps
+    voltage:
+      name: "Voltage"
+      id: set_voltage
+    current:
+      name: "Current"
+      id: set_current
+
+switch:
+  - platform: m5stack_pps
+    output_enable:
+      name: "Output enable"
+      id: oe_switch
+      web_server:
+        sorting_weight: 90
+
+
+
+
+##############################################################################
+font:
+  - file: "gfonts://Roboto+Mono@medium"
+    id: font_roboto_medium22
+    size: 20
+    glyphs: '!"%()+,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/³µ'
+
+color:
+  - id: RED
+    red: 100%
+    green: 0%
+    blue: 0%
+  - id: BLUE
+    red: 0%
+    green: 0%
+    blue: 100%
+  - id: WHITE
+    red: 100%
+    green: 100%
+    blue: 100%
+  - id: BLACK
+    red: 0%
+    green: 0%
+    blue: 0%
+
+light:
+  - platform: monochromatic
+    output: gpio_32_backlight_pwm
+    name: "Display Backlight"
+    id: back_light
+    restore_mode: ALWAYS_ON
+
+# display:
+#   - platform: ili9xxx
+#     id: m5stack_display
+#     model: M5Stack
+#     invert_colors: true
+#     #color_palette: 8BIT
+#     pixel_mode: 16bit
+#     cs_pin: 14
+#     dc_pin: 27
+#     reset_pin: 33
+#     rotation: 0
+#     show_test_card: false
+#     data_rate: 40MHz
+#     update_interval: never
+#     auto_clear_enabled: false
+
+# lvgl:
+#   buffer_size: 25%
+#   theme:
+#     label:
+#       text_font: montserrat_18
+#   layout:
+#     type: FLEX
+#     flex_flow: COLUMN
+#     pad_row: 4px
+#   pad_all: 4
+#   widgets:
+#     - obj:
+#         bg_color: 0xEEEEEE
+#         pad_all: 4
+#         width: 312
+#         height: 114
+#         layout:
+#           type: FLEX
+#           flex_flow: COLUMN
+#         widgets:
+#           - label:
+#               id: v_bat_label
+#               text: 'Battery voltage: 0V'
+#           - label:
+#               id: i_bat_label
+#               text: 'Battery Current: 0V'
+#           - label:
+#               id: soc_label
+#               text: 'Battery SoC: 12%'
+#     - obj:
+#         bg_color: 0xEEEEEE
+#         pad_all: 4
+#         width: 312
+#         height: 114
+#         layout:
+#           type: FLEX
+#           flex_flow: COLUMN
+#         widgets:
+#           - label:
+#               id: v_alt_label
+#               text: 'Alternator voltage: 0'
+#           - label:
+#               id: rpm_label
+#               text: 'Alternator rpm: 0'
+
+
+
+display:
+  - platform: ili9xxx
+    id: m5stack_display
+    model: M5Stack
+    invert_colors: true
+    color_palette: 8BIT
+    pixel_mode: 16bit
+    cs_pin: 14
+    dc_pin: 27
+    reset_pin: 33
+    rotation: 0
+    show_test_card: false
+    data_rate: 40MHz
+    update_interval: 0.1s
+    auto_clear_enabled: false
+
+    lambda: |-
+      // manually clear the data areas
+      static uint8_t c = 0;
+
+      if (c++==0) {
+        // every 256th time
+
+        it.rectangle(0,  0, it.get_width(), it.get_height(), BLUE);
+        it.rectangle(0, 22, it.get_width(), it.get_height(), BLUE);   // header bar
+        it.print(it.get_width() / 2, 11, id(font_roboto_medium22), RED, TextAlign::CENTER, "Battery");
+
+        it.print(11,  33, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "Voltage");
+        it.print(11,  55, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "Current");
+        it.print(11,  77, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "SoC");
+
+        it.rectangle(0, 110, it.get_width(), 22, BLUE);   // header bar
+        it.print(it.get_width() / 2, 121, id(font_roboto_medium22), RED, TextAlign::CENTER, "Alternator");
+
+        it.print(11, 140, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "T Diodes");
+        it.print(11, 162, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "T Case");
+        it.print(11, 184, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "V");
+        it.print(11, 206, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "rpm");
+      }
+      else {
+        // normally
+        it.filled_rectangle(224, 30, 50, 72, BLACK);
+        it.filled_rectangle(224, 144, 50, 84, BLACK);
+
+        it.printf(it.get_width() - 11,  33, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  V", id(v_bat).state);
+        it.printf(it.get_width() - 11,  55, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  A", id(i_bat).state);
+        it.printf(it.get_width() - 11,  77, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  %%", id(soc).state);
+
+        it.printf(it.get_width() - 11, 140, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.0f °C", id(t_diodes).state);
+        it.printf(it.get_width() - 11, 162, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.0f °C", id(t_case).state);
+        it.printf(it.get_width() - 11, 184, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  V", id(v_alt).state);
+        it.printf(it.get_width() - 11, 206, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.0f pm", id(rpm).state);
+      }
+
+binary_sensor:
+  - platform: gpio
+    name: "Button A"
+    pin:
+      number: 39
+      inverted: true
+    filters:
+    - autorepeat:
+      - delay: 1s
+        time_off: 400ms
+        time_on: 100ms
+    on_press:
+      then:
+      - number.decrement:
+          id: set_current
+          cycle: false
+
+  - platform: gpio
+    name: "Button B"
+    pin:
+      number: 38
+      inverted: true
+    on_press:
+      then:
+        - number.set:
+            id: set_voltage
+            value: 12.0
+        - number.set:
+            id: set_current
+            value: 0.001
+        - switch.toggle: oe_switch
+
+  - platform: gpio
+    name: "Button C"
+    pin:
+      number: 37
+      inverted: true
+    filters:
+    - autorepeat:
+      - delay: 1s
+        time_off: 400ms
+        time_on: 100ms
+    on_press:
+      then:
+      - number.increment:
+          id: set_current
+          cycle: false
+
+#####################
