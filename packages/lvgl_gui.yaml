@@ -1,0 +1,60 @@
+display:
+  - platform: ili9xxx
+    id: m5stack_display
+    model: M5Stack
+    invert_colors: true
+    #color_palette: 8BIT
+    pixel_mode: 16bit
+    cs_pin: 14
+    dc_pin: 27
+    reset_pin: 33
+    rotation: 0
+    show_test_card: false
+    data_rate: 40MHz
+    update_interval: never
+    auto_clear_enabled: false
+
+lvgl:
+  buffer_size: 25%
+  theme:
+    label:
+      text_font: montserrat_18
+  layout:
+    type: FLEX
+    flex_flow: COLUMN
+    pad_row: 4px
+  pad_all: 4
+  widgets:
+    - obj:
+        bg_color: 0xEEEEEE
+        pad_all: 4
+        width: 312
+        height: 114
+        layout:
+          type: FLEX
+          flex_flow: COLUMN
+        widgets:
+          - label:
+              id: v_bat_label
+              text: 'Battery voltage: 0V'
+          - label:
+              id: i_bat_label
+              text: 'Battery Current: 0V'
+          - label:
+              id: soc_label
+              text: 'Battery SoC: 12%'
+    - obj:
+        bg_color: 0xEEEEEE
+        pad_all: 4
+        width: 312
+        height: 114
+        layout:
+          type: FLEX
+          flex_flow: COLUMN
+        widgets:
+          - label:
+              id: v_alt_label
+              text: 'Alternator voltage: 0'
+          - label:
+              id: rpm_label
+              text: 'Alternator rpm: 0'

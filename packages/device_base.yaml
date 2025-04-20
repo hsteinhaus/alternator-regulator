@@ -1,0 +1,22 @@
+esphome:
+  platformio_options:
+    upload_speed: 2000000
+    board_build.f_cpu: 240000000L
+    board_build.f_flash: 80000000L
+    board_build.arduino.memory_type: qio_qspi
+    build_flags:
+     -DCONFIG_ARDUINO_LOOP_STACK_SIZE=32768
+
+
+esp32:
+  flash_size: 4MB
+  # framework:
+  #   type: arduino
+  framework:
+    type: esp-idf
+    version: latest
+    sdkconfig_options:
+      # ESP32
+      CONFIG_ESP32_DEFAULT_CPU_FREQ_240: "y"
+      CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ: "240"
+      CONFIG_ESP_MAIN_TASK_STACK_SIZE: "12000"

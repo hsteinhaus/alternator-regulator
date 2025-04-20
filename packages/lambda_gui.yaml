@@ -1,0 +1,39 @@
+|-
+    // manually clear the data areas
+    static uint8_t c = 0;
+
+    if (c++==0) {
+        // every 256th time
+
+        it.rectangle(0,  0, it.get_width(), it.get_height(), BLUE);
+        it.rectangle(0, 22, it.get_width(), it.get_height(), BLUE);   // header bar
+        it.print(it.get_width() / 2, 11, id(font_roboto_medium22), RED, TextAlign::CENTER, "Battery");
+
+        it.print(11,  33, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "Voltage");
+        it.print(11,  55, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "Current");
+        it.print(11,  77, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "SoC");
+
+        it.rectangle(0, 110, it.get_width(), 22, BLUE);   // header bar
+        it.print(it.get_width() / 2, 121, id(font_roboto_medium22), RED, TextAlign::CENTER, "Alternator");
+
+        it.print(11, 140, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "T Diodes");
+        it.print(11, 162, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "T Case");
+        it.print(11, 184, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "V");
+        it.print(11, 206, id(font_roboto_medium22), WHITE, TextAlign::LEFT, "rpm");
+    }
+    else {
+        // normally
+        it.filled_rectangle(224, 30, 50, 72, BLACK);
+        it.filled_rectangle(224, 144, 50, 84, BLACK);
+
+        it.printf(it.get_width() - 11,  33, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  V", id(v_bat).state);
+        it.printf(it.get_width() - 11,  55, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  A", id(i_bat).state);
+        it.printf(it.get_width() - 11,  77, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  %%", id(soc).state);
+
+        it.printf(it.get_width() - 11, 140, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.0f °C", id(t_diodes).state);
+        it.printf(it.get_width() - 11, 162, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.0f °C", id(t_case).state);
+        it.printf(it.get_width() - 11, 184, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.1f  V", id(v_alt).state);
+        it.printf(it.get_width() - 11, 206, id(font_roboto_medium22), WHITE, TextAlign::RIGHT, "%.0f pm", id(rpm).state);
+    }
+
+

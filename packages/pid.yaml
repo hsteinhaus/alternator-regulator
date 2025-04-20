@@ -1,0 +1,59 @@
+external_components:
+  - source: github://hsteinhaus/esphome-gppid@master
+    refresh: 0s
+
+
+sensor:
+  - platform: pid
+    pid_id: field_pid
+    name: "Field current output"
+    unit_of_measurement: A
+    accuracy_decimals: 3
+    type: RESULT
+
+number:
+  - platform: template
+    id: kp_num
+    name: "kP"
+    step: 0.001
+    min_value: 0
+    max_value: 0.1
+    optimistic: True
+  - platform: template
+    id: ki_num
+    name: "kI"
+    step: 0.001
+    min_value: 0
+    max_value: 0.1
+    optimistic: True
+  - platform: template
+    id: kd_num
+    name: "kD"
+    step: 0.001
+    min_value: 0
+    max_value: 0.1
+    optimistic: True
+
+##############################################################################
+
+pid:
+  - id: field_pid
+    current_value: v_alt
+    target_number: v_target_num
+    # target_sensor: v_target_sensor
+    output:
+      id: i_field_out
+      min: 0.01
+      max: 0.5
+    control_parameters:
+      kp: 0.01
+      ki: 0.0
+      kd: 0.0
+      kp_num: kp_num
+      ki_num: ki_num
+      kd_num: kd_num
+      # output_averaging_samples: 5      # smooth the output over 5 samples
+      # derivative_averaging_samples: 5  # smooth the derivative value over 10 samples
+    # deadband_parameters:
+    #   threshold_high: 0.01
+    #   threshold_low: -0.01

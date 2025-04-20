@@ -1,0 +1,49 @@
+external_components:
+  - source: github://hsteinhaus/esphome-m5stack-pps-module@master
+    refresh: 0s
+
+m5stack_pps:
+  i2c_id: bus_a
+  id: pps1
+
+sensor:
+  - platform: m5stack_pps
+    m5stack_pps: pps1
+    mode:
+      id: current_mode
+      name: "Output mode"
+    voltage:
+      id: actual_voltage
+      name: "PPS Field voltage"
+    current:
+      id: actual_current
+      name: "PPS Field current"
+    power:
+      id: actual_power
+      name: "PPS Field power"
+
+number:
+  - platform: m5stack_pps
+    voltage:
+      name: "Voltage"
+      id: set_voltage
+    current:
+      name: "Current"
+      id: set_current
+  - platform: template
+    id: v_target_num
+    name: "Target voltage"
+    unit_of_measurement: V
+    step: 0.1
+    min_value: 0
+    max_value: 20
+    optimistic: True
+
+
+switch:
+  - platform: m5stack_pps
+    output_enable:
+      name: "Output enable"
+      id: oe_switch
+      # web_server:
+      #   sorting_weight: 90

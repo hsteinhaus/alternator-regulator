@@ -1,0 +1,20 @@
+substitutions:
+  # Set the MAC addresses and encryption keys of your Victron devices here
+  # The values here are examples and cannot work for your devices
+  smart_shunt_mac_address: cb:8a:4f:19:e7:83
+  smart_shunt_encryption_key: 1432dc30073bcee92f95709d9d200205
+
+external_components:
+  - source: github://Fabian-Schmidt/esphome-victron_ble
+
+# esp32_ble_tracker:
+# #  max_connections: 3
+#   scan_parameters:
+#     interval: 10ms
+#     window: 10ms
+#     active: false
+
+# victron_ble:
+#   - id: MySmartShunt
+#     mac_address: ${smart_shunt_mac_address}
+#     bindkey: ${smart_shunt_encryption_key}
