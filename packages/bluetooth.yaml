@@ -1,20 +1,55 @@
 substitutions:
   # Set the MAC addresses and encryption keys of your Victron devices here
   # The values here are examples and cannot work for your devices
-  smart_shunt_mac_address: cb:8a:4f:19:e7:83
-  smart_shunt_encryption_key: 1432dc30073bcee92f95709d9d200205
+  smart_shunt_mac_address: f9:3c:eb:5e:f4:75
+  smart_shunt_encryption_key: e8e4d8144a72492e8e8b2b9c9378bdfb
 
 external_components:
   - source: github://Fabian-Schmidt/esphome-victron_ble
 
-# esp32_ble_tracker:
-# #  max_connections: 3
-#   scan_parameters:
-#     interval: 10ms
-#     window: 10ms
-#     active: false
+esp32:
+  framework:
+    sdkconfig_options:
+      CONFIG_ESP_COEX_SW_COEXIST_ENABLE: "y"
 
-# victron_ble:
-#   - id: MySmartShunt
-#     mac_address: ${smart_shunt_mac_address}
-#     bindkey: ${smart_shunt_encryption_key}
+esp32_ble_tracker:
+#  max_connections: 3
+  scan_parameters:
+    interval: 10ms
+    window: 10ms
+    active: false
+
+victron_ble:
+  - id: MySmartShunt
+    mac_address: ${smart_shunt_mac_address}
+    bindkey: ${smart_shunt_encryption_key}
+
+sensor:
+  # MySmartShunt
+  - platform: victron_ble
+    victron_ble_id: MySmartShunt
+    name: "Battery voltage"
+    type: BATTERY_VOLTAGE
+    id: v_bat
+    web_server:
+      sorting_group_id: bat_data
+    force_update: true
+  - platform: victron_ble
+    victron_ble_id: MySmartShunt
+    name: "Current"
+    type: BATTERY_CURRENT
+    id: i_bat
+    web_server:
+      sorting_group_id: bat_data
+    force_update: true
+  - platform: victron_ble
+    victron_ble_id: MySmartShunt
+    name: "State of charge"
+    type: STATE_OF_CHARGE
+    id: soc
+    web_server:
+      sorting_group_id: bat_data
+
+  - platform: template
+    name: "BLE Sensor"
+    id: ble_sensor
