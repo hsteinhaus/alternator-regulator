@@ -2,6 +2,18 @@ external_components:
   - source: github://hsteinhaus/esphome-gppid@master
     refresh: 0s
 
+esphome:
+  on_boot:
+    then:
+      - number.set:
+          id: kp_num
+          value: !lambda return id(field_pid).get_kp();
+      - number.set:
+          id: ki_num
+          value: !lambda return id(field_pid).get_ki();
+      - number.set:
+          id: kd_num
+          value: !lambda return id(field_pid).get_kd();
 
 sensor:
   - platform: pid
@@ -10,31 +22,48 @@ sensor:
     unit_of_measurement: A
     accuracy_decimals: 3
     type: RESULT
+    web_server:
+      sorting_group_id: voltage_pid_group
 
 number:
   - platform: template
     id: kp_num
     name: "kP"
     step: 0.001
-    min_value: 0
-    max_value: 0.1
+    min_value: 0.0
+    max_value: 0.05
     optimistic: True
+    web_server:
+      sorting_group_id: voltage_pid_group
   - platform: template
     id: ki_num
     name: "kI"
     step: 0.001
     min_value: 0
-    max_value: 0.1
+    max_value: 0.5
     optimistic: True
+    web_server:
+      sorting_group_id: voltage_pid_group
   - platform: template
     id: kd_num
     name: "kD"
-    step: 0.001
+    step: 0.0001
     min_value: 0
-    max_value: 0.1
+    max_value: 0.003
     optimistic: True
+    web_server:
+      sorting_group_id: voltage_pid_group
 
-##############################################################################
+  - platform: template
+    id: v_target_num
+    name: "Target voltage"
+    unit_of_measurement: V
+    step: 0.1
+    min_value: 0
+    max_value: 30
+    optimistic: True
+    web_server:
+      sorting_group_id: voltage_pid_group
 
 pid:
   - id: field_pid
@@ -46,14 +75,16 @@ pid:
       min: 0.01
       max: 0.5
     control_parameters:
-      kp: 0.01
-      ki: 0.0
-      kd: 0.0
+      kp: 0.011
+      ki: 0.3
+      kd: 0.001
+      min_integral: -0.5
+      max_integral: 0.5
       kp_num: kp_num
       ki_num: ki_num
       kd_num: kd_num
-      # output_averaging_samples: 5      # smooth the output over 5 samples
-      # derivative_averaging_samples: 5  # smooth the derivative value over 10 samples
+      #output_averaging_samples: 5      # smooth the output over 5 samples
+      derivative_averaging_samples: 5  # smooth the derivative value over 10 samples
     # deadband_parameters:
     #   threshold_high: 0.01
     #   threshold_low: -0.01
