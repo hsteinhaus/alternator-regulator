@@ -72,14 +72,6 @@ output:
     pin: 32
     id: backlight_pwm
 
-  - platform: template
-    id: i_field_out
-    type: float
-    write_action:
-      - number.set:
-          id: set_current
-          value: !lambda return state;
-
 light:
   - platform: monochromatic
     output: backlight_pwm

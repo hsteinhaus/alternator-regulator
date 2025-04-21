@@ -88,3 +88,12 @@ pid:
     # deadband_parameters:
     #   threshold_high: 0.01
     #   threshold_low: -0.01
+
+output:
+  - platform: template
+    id: i_field_out
+    type: float
+    write_action:
+      - number.set:
+          id: set_current
+          value: !lambda return state;
