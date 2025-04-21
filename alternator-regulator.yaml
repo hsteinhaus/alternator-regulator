@@ -1,10 +1,12 @@
 packages:
   device_base: !include packages/device_base.yaml
-  core_basic_27: !include packages/core_basic_27.yaml
+  # core_basic_27: !include packages/core_basic_27.yaml
+  core2_11: !include packages/core2_11.yaml
+  # core_s3: !include packages/core_s3.yaml
   # lvgl_gui: !include packages/lvgl_gui.yaml
-  #lambda_gui: !include packages/lambda_gui.yaml
   pid: !include packages/pid.yaml
   pps: !include packages/pps.yaml
+  bt: !include packages/bluetooth.yaml
 
 esphome:
   name: alternator-regulator
@@ -16,15 +18,7 @@ esphome:
     then:
       # - lambda:
       #     App.set_loop_interval(0);
-      - sensor.template.publish:
-          id: v_bat
-          state: 27.0
-      - sensor.template.publish:
-          id: i_bat
-          state: 0.0
-      - sensor.template.publish:
-          id: soc
-          state: 78.5
+
 
 debug:
   update_interval: 5s
@@ -76,39 +70,24 @@ sensor:
       name: "Heap Free"
     loop_time:
       name: "Loop Time"
-  - platform: template
-    name: "Battery voltage"
-    id: v_bat
-    web_server:
-      sorting_group_id: bat_data
-  - platform: template
-    name: "Battery current"
-    id: i_bat
-    web_server:
-      sorting_group_id: bat_data
-  - platform: template
-    name: "Battery SoC"
-    id: soc
-    web_server:
-      sorting_group_id: bat_data
 
-  - platform: dallas_temp
-    id: t_diodes
-    name: Diode temp
-    web_server:
-      sorting_group_id: alt_data
-    address: 0xd30723c061986428
-    update_interval: 10s
-  - platform: dallas_temp
-    id: t_case
-    name: Case temp
-    web_server:
-      sorting_group_id: alt_data
-    address: 0xce0b244223798b28
-    update_interval: 10s
+  # - platform: dallas_temp
+  #   id: t_diodes
+  #   name: Diode temp
+  #   web_server:
+  #     sorting_group_id: alt_data
+  #   address: 0xd30723c061986428
+  #   update_interval: 10s
+  # - platform: dallas_temp
+  #   id: t_case
+  #   name: Case temp
+  #   web_server:
+  #     sorting_group_id: alt_data
+  #   address: 0xce0b244223798b28
+  #   update_interval: 10s
 
   - platform: pulse_counter
-    pin: GPIO5
+    pin: ${rpm_io}
     name: "RPM"
     id: rpm
     unit_of_measurement: rpm  # counter is already in pulses per minute
@@ -135,7 +114,7 @@ sensor:
 
 
   - platform: adc
-    pin: GPIO35
+    pin: ${vbat_io}
     id: v_alt
     name: "Alternator voltage"
     web_server:
@@ -174,21 +153,4 @@ color:
     red: 0%
     green: 0%
     blue: 0%
-
-display:
-  - platform: ili9xxx
-    model: M5Stack
-    id: m5stack_display
-    invert_colors: true
-    color_palette: 8BIT
-    pixel_mode: 16bit
-    cs_pin: 14
-    dc_pin: 27
-    reset_pin: 33
-    rotation: 0
-    show_test_card: false
-    data_rate: 40MHz
-    update_interval: 0.1s
-    auto_clear_enabled: false
-    lambda: !include { file: packages/lambda_gui.yaml }
 
