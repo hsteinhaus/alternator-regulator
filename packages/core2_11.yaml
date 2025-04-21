@@ -1,0 +1,94 @@
+
+esp32:
+  board: m5stack-core2
+#   framework:
+#     sdkconfig_options:
+#       CONFIG_SPIRAM: "y"
+#       CONFIG_SPIRAM_MEMTEST: "y"
+#       CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: "n"
+
+external_components:
+  - source: github://stefanthoss/esphome-axp2101
+    components: [ axp2101 ]
+
+substitutions:
+  vbat_io: GPIO35
+  rpm_io: GPIO33
+
+i2c:
+  id: bus_a
+  frequency: 400kHz
+  scan: False
+  sda: GPIO21
+  scl: GPIO22
+
+psram:
+
+
+# one_wire:
+#   - platform: gpio
+#     pin: GPIO17
+
+# sensor:
+#   - platform: axp2101
+#     model: M5CORE2
+#     address: 0x34
+#     i2c_id: bus_a
+#     update_interval: 30s
+#     brightness: 75%
+#     battery_voltage:
+#       name: "Battery Voltage"
+#     battery_level:
+#       name: "Battery Level"
+#     battery_charging:
+#       name: "Battery Charging"
+
+
+
+binary_sensor:
+  # - platform: touchscreen
+  #   name: Left Touch Button
+  #   x_min: 0
+  #   x_max: 106
+  #   y_min: 120
+  #   y_max: 140
+
+  # - platform: touchscreen
+  #   name: Middle Touch Button
+  #   x_min: 107
+  #   x_max: 213
+  #   y_min: 120
+  #   y_max: 140
+
+  # - platform: touchscreen
+  #   name: Right Touch Button
+  #   x_min: 214
+  #   x_max: 320
+  #   y_min: 120
+  #   y_max: 140
+
+
+
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+#  miso_pin: 38
+  interface: spi3
+
+# display:
+#   - platform: ili9xxx
+#     model: M5Stack
+#     id: m5stack_display
+#     invert_colors: true
+#     color_palette: 8BIT
+#     pixel_mode: 16bit
+#     cs_pin: 5
+#     dc_pin: 15
+#     #reset_pin: AXP_ALDO2
+#     rotation: 0
+#     show_test_card: false
+#     data_rate: 40MHz
+#     update_interval: 0.1s
+#     auto_clear_enabled: false
+#     lambda: !include { file: lambda_gui.yaml }
+

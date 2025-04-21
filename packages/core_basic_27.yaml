@@ -1,11 +1,10 @@
+
 esp32:
   board: m5stack-core-esp32
 
-spi:
-  clk_pin: 18
-  mosi_pin: 23
-#  miso_pin: 19
-  interface: spi3
+substitutions:
+  vbat_io: GPIO35
+  rpm_io: GPIO5
 
 i2c:
   id: bus_a
@@ -16,7 +15,7 @@ i2c:
 
 one_wire:
   - platform: gpio
-    pin: GPIO19
+    pin: GPIO17
 
 binary_sensor:
   - platform: gpio
@@ -78,3 +77,42 @@ light:
     name: "Display Backlight"
     id: back_light
     restore_mode: ALWAYS_ON
+
+spi:
+  clk_pin: 18
+  mosi_pin: 23
+#  miso_pin: 19
+  interface: spi3
+
+display:
+  - platform: ili9xxx
+    model: M5Stack
+    id: m5stack_display
+    invert_colors: true
+    color_palette: 8BIT
+    pixel_mode: 16bit
+    cs_pin: 14
+    dc_pin: 27
+    reset_pin: 33
+    rotation: 0
+    show_test_card: false
+    data_rate: 40MHz
+    update_interval: 0.1s
+    auto_clear_enabled: false
+    lambda: !include { file: lambda_gui.yaml }
+
+
+sensor:
+  - platform: template
+    name: "Battery voltage"
+    id: v_bat
+  - platform: template
+    name: "Battery current"
+    id: i_bat
+    web_server:
+      sorting_group_id: bat_data
+  - platform: template
+    name: "Battery SoC"
+    id: soc
+    web_server:
+      sorting_group_id: bat_data

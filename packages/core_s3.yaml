@@ -1,0 +1,108 @@
+external_components:
+  - source: github://jenscski/esphome-components@main
+    components: [ aw9523 ]
+  - source: github://stefanthoss/esphome-axp2101
+    components: [ axp2101 ]
+
+esp32:
+  board: m5stack-cores3
+  framework:
+    sdkconfig_options:
+      CONFIG_SPIRAM: "y"
+
+psram:
+#  mode: octal
+#  speed: 80MHz
+
+
+substitutions:
+  vbat_io: GPIO10
+  rpm_io: GPIO1
+
+
+i2c:
+  id: bus_a
+  frequency: 400kHz
+  scan: False
+  sda: GPIO12
+  scl: GPIO11
+
+one_wire:
+  - platform: gpio
+    pin: GPIO17
+
+# binary_sensor:
+
+# sensor:
+#   - platform: axp2101
+#     model: M5CORE2
+#     address: 0x34
+#     i2c_id: bus_a
+#     brightness: 75%
+
+
+# # GPIO pin of the display backlight
+output:
+  - platform: aw9523
+    aw9523: aw9523_1
+    id: aw9523_pin_1
+    max_current: 10 mA
+    pin: 1
+
+#   - platform: ledc
+#     pin: 32
+#     id: backlight_pwm
+
+# light:
+#   - platform: monochromatic
+#     output: backlight_pwm
+#     name: "Display Backlight"
+#     id: back_light
+#     restore_mode: ALWAYS_ON
+
+
+# switch:
+# - platform: template
+#   name: "LCD Backlight"
+#   id: switch_lcd_backlight
+#   restore_mode: "RESTORE_DEFAULT_ON"
+#   turn_on_action:
+#     - lambda:
+#         M5.Display.setBrightness(127);
+#   turn_off_action:
+#     - lambda: |-
+#         M5.Display.setBrightness(0);
+
+
+
+aw9523:
+  - id: aw9523_1
+    address: 0x58
+    divider: 3
+    latch_inputs: true
+
+
+spi:
+  clk_pin: 36
+  mosi_pin: 37
+#  miso_pin: 19
+  interface: spi3
+
+
+
+display:
+  - platform: ili9xxx
+    model: M5Stack
+    id: m5stack_display
+    invert_colors: true
+    color_palette: 8BIT
+    pixel_mode: 16bit
+    cs_pin: GPIO33
+    dc_pin: GPIO35
+    # reset_pin: aw9523_pin_1
+    rotation: 0
+    show_test_card: false
+    data_rate: 40MHz
+    update_interval: 0.1s
+    auto_clear_enabled: false
+    lambda: !include { file: lambda_gui.yaml }

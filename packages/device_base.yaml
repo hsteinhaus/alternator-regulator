@@ -5,7 +5,8 @@ esphome:
     board_build.f_flash: 80000000L
     board_build.arduino.memory_type: qio_qspi
     build_flags:
-     -DCONFIG_ARDUINO_LOOP_STACK_SIZE=32768
+      -DCONFIG_ARDUINO_LOOP_STACK_SIZE=32768
+      -mfix-esp32-psram-cache-issue
 
 
 esp32:
