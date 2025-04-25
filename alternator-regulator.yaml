@@ -1,12 +1,12 @@
 packages:
   device_base: !include packages/device_base.yaml
-  # core_basic_27: !include packages/core_basic_27.yaml
-  core2_11: !include packages/core2_11.yaml
+  core_basic_27: !include packages/core_basic_27.yaml
+  # core2_11: !include packages/core2_11.yaml
   # core_s3: !include packages/core_s3.yaml
   # lvgl_gui: !include packages/lvgl_gui.yaml
   pid: !include packages/pid.yaml
   pps: !include packages/pps.yaml
-  bt: !include packages/bluetooth.yaml
+  # bt: !include packages/bluetooth.yaml
 
 esphome:
   name: alternator-regulator
@@ -45,8 +45,10 @@ web_server:
     - id: bat_data
       name: "Battery state"
       sorting_weight: -20
+
 # Enable Home Assistant API
 api:
+  reboot_timeout: 0s
   encryption:
     key: !secret api_password
 
@@ -71,20 +73,23 @@ sensor:
     loop_time:
       name: "Loop Time"
 
-  # - platform: dallas_temp
-  #   id: t_diodes
-  #   name: Diode temp
-  #   web_server:
-  #     sorting_group_id: alt_data
-  #   address: 0xd30723c061986428
-  #   update_interval: 10s
-  # - platform: dallas_temp
-  #   id: t_case
-  #   name: Case temp
-  #   web_server:
-  #     sorting_group_id: alt_data
-  #   address: 0xce0b244223798b28
-  #   update_interval: 10s
+
+  - platform: template
+#  - platform: dallas_temp
+#    address: 0xd30723c061986428
+    id: t_diodes
+    name: Diode temp
+    web_server:
+      sorting_group_id: alt_data
+    update_interval: 10s
+  - platform: template
+#  - platform: dallas_temp
+#    address: 0xce0b244223798b28
+    id: t_case
+    name: Case temp
+    web_server:
+      sorting_group_id: alt_data
+    update_interval: 10s
 
   - platform: pulse_counter
     pin: ${rpm_io}
@@ -96,14 +101,15 @@ sensor:
       sorting_group_id: alt_data
     use_pcnt: True
     count_mode:
-      rising_edge: DISABLE
+      rising_edge: INCREMENT
       falling_edge: INCREMENT
-    update_interval: .5s
+    update_interval: 0.25s  #  pulse count is compensated as per-second/per-minute value by ESPHome!
     filters:
-    - multiply: 0.25
-    - or:
-      - throttle: 5s
-      - delta: 1%
+    - filter_out: 0.0  # zero is considered an invalid value - still engine is detected by v_alt
+    - timeout: 1.0s    # sensor failure -> NaN
+    - multiply: 0.083333333  # 1 / (pole pairs * imp per period) )
+      # - throttle: 1s
+      # - delta: 1%
     # on_value:
     #   then:
     #     - lvgl.label.update:
