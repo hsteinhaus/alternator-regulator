@@ -33,7 +33,8 @@ sensor:
     id: v_bat
     web_server:
       sorting_group_id: bat_data
-    force_update: true
+    filters:
+      - timeout: 5s
   - platform: victron_ble
     victron_ble_id: MySmartShunt
     name: "Current"
@@ -41,7 +42,8 @@ sensor:
     id: i_bat
     web_server:
       sorting_group_id: bat_data
-    force_update: true
+    filters:
+      - timeout: 5s
   - platform: victron_ble
     victron_ble_id: MySmartShunt
     name: "State of charge"

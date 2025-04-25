@@ -8,7 +8,7 @@ esp32:
 #       CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP: "n"
 
 external_components:
-  - source: github://stefanthoss/esphome-axp2101
+  - source: github://hsteinhaus/esphome-axp2101
     components: [ axp2101 ]
 
 substitutions:
