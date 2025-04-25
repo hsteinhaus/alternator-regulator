@@ -1,12 +1,13 @@
 packages:
-  device_base: !include packages/device_base.yaml
-  core_basic_27: !include packages/core_basic_27.yaml
+  device_base:   !include packages/device_base.yaml
+  # core_basic_27: !include packages/core_basic_27.yaml
+  core_fire_27:  !include packages/core_fire_27.yaml
   # core2_11: !include packages/core2_11.yaml
   # core_s3: !include packages/core_s3.yaml
   # lvgl_gui: !include packages/lvgl_gui.yaml
   pid: !include packages/pid.yaml
   pps: !include packages/pps.yaml
-  # bt: !include packages/bluetooth.yaml
+  bt: !include packages/bluetooth.yaml
 
 esphome:
   name: alternator-regulator

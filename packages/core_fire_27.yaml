@@ -6,6 +6,8 @@ substitutions:
   vbat_io: GPIO35
   rpm_io: GPIO5
 
+psram:
+
 i2c:
   id: bus_a
   frequency: 400kHz
@@ -13,9 +15,9 @@ i2c:
   sda: GPIO21
   scl: GPIO22
 
-one_wire:
-  - platform: gpio
-    pin: GPIO17
+# one_wire:
+#   - platform: gpio
+#     pin: GPIO17
 
 binary_sensor:
   - platform: gpio
