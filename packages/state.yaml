@@ -1,0 +1,54 @@
+external_components:
+  - source: github://muxa/esphome-state-machine
+    refresh: always
+
+
+state_machine:
+  - name: "TempControl"
+    states:
+      - name: "OFF"
+        on_enter:
+          then:
+            - light.turn_off: backlight
+            - switch.turn_off: heater
+      - name: "ON"
+        on_enter:
+          then:
+            light.turn_on: backlight
+      - name: "HEATING"
+        on_enter:
+          then:
+            # protect against race between S3 firmware booting and power-on
+            - delay: 120s
+            - switch.turn_on: heater
+        on_leave:
+          then:
+            - delay: 1200s
+            - switch.turn_off: heater
+    inputs:
+      - name: PWR_ON
+        transitions:
+          - OFF -> ON
+      - name: PWR_OFF
+        transitions:
+          - ON -> OFF
+          - HEATING -> OFF
+      - name: START_HEATER
+        transitions:
+          - ON -> HEATING
+          - HEATING -> HEATING
+      - name: STOP_HEATER
+        transitions:
+          - HEATING -> ON
+          - ON -> ON
+    diagram: mermaid
+    initial_state: "OFF"
+
+text_sensor:
+  - platform: state_machine
+    name: "${friendly_name} State"
+  - platform: debug
+    device:
+      name: "${friendly_name} Device Info"
+    reset_reason:
+      name: "${friendly_name} Reset Reason"
