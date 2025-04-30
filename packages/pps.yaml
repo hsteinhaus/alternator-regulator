@@ -43,6 +43,7 @@ number:
     channel: current
     name: "Current"
     id: set_current
+    step: 0.05
     web_server:
       sorting_group_id: pps_group
 
