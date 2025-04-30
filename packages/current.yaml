@@ -1,0 +1,38 @@
+# Example configuration entry
+sensor:
+  - platform: ina226
+    address: 0x40
+    shunt_resistance: 0.000375 ohm
+    max_current: 300A
+    # adc time used for both, Bus Voltage and Shunt Voltage
+    adc_time: 140us
+    adc_averaging: 128
+    update_interval: 0.5s
+    current:
+      name: "Battery Current"
+      id: i_bat
+      web_server:
+        sorting_group_id: bat_data
+      filters:
+      - timeout: 5s
+    power:
+      name: "Charge Power"
+      id: p_bat
+      web_server:
+        sorting_group_id: bat_data
+      filters:
+      - timeout: 5s
+    bus_voltage:
+      name: "Battery Voltage"
+      id: v_bat
+      web_server:
+        sorting_group_id: bat_data
+      filters:
+      - timeout: 5s
+    shunt_voltage:
+      name: "Shunt Voltage"
+      id: v_sh
+      web_server:
+        sorting_group_id: bat_data
+      filters:
+      - timeout: 5s
