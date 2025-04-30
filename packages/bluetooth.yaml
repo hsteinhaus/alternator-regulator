@@ -10,13 +10,13 @@ external_components:
 esp32:
   framework:
     sdkconfig_options:
-      CONFIG_ESP_COEX_SW_COEXIST_ENABLE: "y"
+      CONFIG_ESP_COEX_SW_COEXIST_ENABLE: "n"  # random crash after a few minutes / WiFi activity when not set or "y"
 
 esp32_ble_tracker:
 #  max_connections: 3
   scan_parameters:
-    interval: 10ms
-    window: 10ms
+    interval: 150ms
+    #window: 30ms
     active: false
 
 victron_ble:
@@ -28,30 +28,24 @@ sensor:
   # MySmartShunt
   - platform: victron_ble
     victron_ble_id: MySmartShunt
-    name: "Battery voltage"
-    type: BATTERY_VOLTAGE
-    id: v_bat
-    web_server:
-      sorting_group_id: bat_data
-    filters:
-      - timeout: 5s
-  - platform: victron_ble
-    victron_ble_id: MySmartShunt
-    name: "Current"
-    type: BATTERY_CURRENT
-    id: i_bat
-    web_server:
-      sorting_group_id: bat_data
-    filters:
-      - timeout: 5s
-  - platform: victron_ble
-    victron_ble_id: MySmartShunt
     name: "State of charge"
     type: STATE_OF_CHARGE
     id: soc
     web_server:
       sorting_group_id: bat_data
 
-  - platform: template
-    name: "BLE Sensor"
-    id: ble_sensor
+  - platform: victron_ble
+    victron_ble_id: MySmartShunt
+    name: "Battery voltage"
+    type: BATTERY_VOLTAGE
+    id: v_bat
+    web_server:
+      sorting_group_id: bat_data
+
+  - platform: victron_ble
+    victron_ble_id: MySmartShunt
+    name: "Battery Current"
+    type: BATTERY_CURRENT
+    id: i_bat
+    web_server:
+      sorting_group_id: bat_data
