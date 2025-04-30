@@ -8,7 +8,6 @@ esphome:
       -DCONFIG_ARDUINO_LOOP_STACK_SIZE=32768
       -mfix-esp32-psram-cache-issue
 
-
 esp32:
   flash_size: 4MB
   # framework:
@@ -21,3 +20,31 @@ esp32:
       CONFIG_ESP32_DEFAULT_CPU_FREQ_240: "y"
       CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ: "240"
       CONFIG_ESP_MAIN_TASK_STACK_SIZE: "12000"
+      # CONFIG_SPIRAM_USE_MEMMAP: "y"
+      # CONFIG_SPIRAM_USE_CAPS_ALLOC: "y"
+      # CONFIG_SPIRAM_USE_MALLOC: "y"
+debug:
+  update_interval: 5s
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+    psram:
+      name: "Free PSRAM"
+
+
+switch:
+  - platform: restart
+    name: "Restart Switch"
