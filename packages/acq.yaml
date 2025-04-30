@@ -1,0 +1,45 @@
+# custom ACQ module related code
+
+sensor:
+  - platform: pulse_counter
+    pin: ${rpm_io}
+    name: "RPM"
+    id: rpm
+    unit_of_measurement: rpm  # counter is already in pulses per minute
+    accuracy_decimals: 0
+    web_server:
+      sorting_group_id: alt_data
+    use_pcnt: True
+    count_mode:
+      rising_edge: INCREMENT
+      falling_edge: INCREMENT
+    update_interval: 0.25s  #  pulse count is compensated as per-second/per-minute value by ESPHome!
+    filters:
+    - filter_out: 0.0  # zero is considered an invalid value - still engine is detected by v_alt
+    - timeout: 1.0s    # sensor failure -> NaN
+    - multiply: 0.083333333  # 1 / (pole pairs * imp per period) )
+      # - throttle: 1s
+      # - delta: 1%
+    # on_value:
+    #   then:
+    #     - lvgl.label.update:
+    #         id: rpm_label
+    #         text:
+    #           format: "Alternator rpm: %.0f"
+    #           args: x
+
+
+  - platform: adc
+    pin: ${vbat_io}
+    id: v_alt
+    name: "Alternator voltage"
+    web_server:
+      sorting_group_id: alt_data
+    attenuation: 6dB
+    samples: 16
+    update_interval: 25ms
+    filters:
+      - multiply: 22.78  # voltage divider 1k/22k
+      - sliding_window_moving_average:
+         send_every: 4
+         window_size: 8

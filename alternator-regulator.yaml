@@ -5,6 +5,8 @@ packages:
   # core2_11: !include packages/core2_11.yaml
   # core_s3: !include packages/core_s3.yaml
   # lvgl_gui: !include packages/lvgl_gui.yaml
+  acq: !include packages/acq.yaml
+  current: !include packages/current.yaml
   pid: !include packages/pid.yaml
   pps: !include packages/pps.yaml
   bt: !include packages/bluetooth.yaml
@@ -21,12 +23,16 @@ esphome:
       #     App.set_loop_interval(0);
 
 
-debug:
-  update_interval: 5s
-
 # Enable logging
 logger:
-  level: INFO
+  # necessary for "Reset reason" to work
+  level: DEBUG
+  logs:
+    # suppress high-freq messages
+    sensor: INFO
+    pid: INFO
+    pulse_counter: INFO
+
 
 web_server:
   port: 80
@@ -51,7 +57,7 @@ web_server:
 api:
   reboot_timeout: 0s
   encryption:
-    key: !secret api_password
+    key: !secret api_key
 
 ota:
   - platform: esphome
@@ -68,13 +74,7 @@ wifi:
 #############################################################################
 
 sensor:
-  - platform: debug
-    free:
-      name: "Heap Free"
-    loop_time:
-      name: "Loop Time"
-
-
+  # fake sensors that are currently not connected
   - platform: template
 #  - platform: dallas_temp
 #    address: 0xd30723c061986428
@@ -91,49 +91,6 @@ sensor:
     web_server:
       sorting_group_id: alt_data
     update_interval: 10s
-
-  - platform: pulse_counter
-    pin: ${rpm_io}
-    name: "RPM"
-    id: rpm
-    unit_of_measurement: rpm  # counter is already in pulses per minute
-    accuracy_decimals: 0
-    web_server:
-      sorting_group_id: alt_data
-    use_pcnt: True
-    count_mode:
-      rising_edge: INCREMENT
-      falling_edge: INCREMENT
-    update_interval: 0.25s  #  pulse count is compensated as per-second/per-minute value by ESPHome!
-    filters:
-    - filter_out: 0.0  # zero is considered an invalid value - still engine is detected by v_alt
-    - timeout: 1.0s    # sensor failure -> NaN
-    - multiply: 0.083333333  # 1 / (pole pairs * imp per period) )
-      # - throttle: 1s
-      # - delta: 1%
-    # on_value:
-    #   then:
-    #     - lvgl.label.update:
-    #         id: rpm_label
-    #         text:
-    #           format: "Alternator rpm: %.0f"
-    #           args: x
-
-
-  - platform: adc
-    pin: ${vbat_io}
-    id: v_alt
-    name: "Alternator voltage"
-    web_server:
-      sorting_group_id: alt_data
-    attenuation: 6dB
-    samples: 16
-    update_interval: 25ms
-    filters:
-      - multiply: 22.78  # voltage divider 1k/22k
-      - sliding_window_moving_average:
-         send_every: 4
-         window_size: 8
 
 ##############################################################################
 
