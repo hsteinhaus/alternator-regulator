@@ -1,0 +1,138 @@
+packages:
+  device_base:   !include packages/device_base.yaml
+  # core_basic_27: !include packages/core_basic_27.yaml
+  core_fire_27:  !include packages/core_fire_27.yaml
+  # core2_11: !include packages/core2_11.yaml
+  # core_s3: !include packages/core_s3.yaml
+  # lvgl_gui: !include packages/lvgl_gui.yaml
+  acq: !include packages/acq.yaml
+  # current: !include packages/current.yaml
+  # pid: !include packages/pid.yaml
+  pps: !include packages/pps.yaml
+  bt: !include packages/bluetooth.yaml
+
+esphome:
+  name: alternator-test
+  friendly_name: "alternator-test"
+  project:
+    name: "hsteinhaus.alternator_test"
+    version: "0.1"
+  on_boot:
+    then:
+      # - lambda:
+      #     App.set_loop_interval(0);
+
+
+# Enable logging
+logger:
+  # necessary for "Reset reason" to work
+  level: DEBUG
+  logs:
+    # suppress high-freq messages
+    sensor: INFO
+    pid: INFO
+    pulse_counter: INFO
+
+
+web_server:
+  port: 80
+#  ota: true
+  local: true
+  version: 3
+  sorting_groups:
+    - id: voltage_pid_group
+      name: "Voltage PID settings"
+      sorting_weight: -100
+    - id: pps_group
+      name: "Power Supply Module"
+      sorting_weight: -10
+    - id: alt_data
+      name: "Alternator state"
+      sorting_weight: -30
+    - id: bat_data
+      name: "Battery state"
+      sorting_weight: -20
+
+# Enable Home Assistant API
+api:
+  reboot_timeout: 0s
+  encryption:
+    key: !secret api_key
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+wifi:
+  reboot_timeout: 0s
+  domain: .wifi.home
+  networks:
+    - ssid: !secret wifi_ssid_02
+      password: !secret wifi_password_02
+
+
+#############################################################################
+
+sensor:
+  # fake sensors that are currently not connected
+  - platform: template
+#  - platform: dallas_temp
+#    address: 0xd30723c061986428
+    id: t_diodes
+    name: Diode temp
+    web_server:
+      sorting_group_id: alt_data
+    update_interval: 10s
+  - platform: template
+#  - platform: dallas_temp
+#    address: 0xce0b244223798b28
+    id: t_case
+    name: Case temp
+    web_server:
+      sorting_group_id: alt_data
+    update_interval: 10s
+
+  # - platform: template
+  #   name: "Battery voltage"
+  #   id: v_bat
+  #   web_server:
+  #     sorting_group_id: bat_data
+  # - platform: template
+  #   name: "Battery current"
+  #   id: i_bat
+  #   web_server:
+  #     sorting_group_id: bat_data
+  # - platform: template
+  #   name: "Battery SoC"
+  #   id: soc
+  #   web_server:
+  #     sorting_group_id: bat_data
+
+
+##############################################################################
+
+font:
+  - file: "gfonts://Roboto+Mono@medium"
+    id: font_roboto_medium22
+    size: 20
+    glyphs: '!"%()+,-_.:°0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz/³µ'
+
+color:
+  - id: RED
+    red: 100%
+    green: 0%
+    blue: 0%
+  - id: BLUE
+    red: 0%
+    green: 0%
+    blue: 100%
+  - id: WHITE
+    red: 100%
+    green: 100%
+    blue: 100%
+  - id: BLACK
+    red: 0%
+    green: 0%
+    blue: 0%
+
+
