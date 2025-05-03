@@ -4,9 +4,10 @@ esphome:
     board_build.f_cpu: 240000000L
     board_build.f_flash: 80000000L
     board_build.arduino.memory_type: qio_qspi
-    build_flags:
-      -DCONFIG_ARDUINO_LOOP_STACK_SIZE=32768
-      -mfix-esp32-psram-cache-issue
+#    platform: https://github.com/pioarduino/platform-espressif32.git#f4def7ffb924cd9657f8f32ee52902ad550f752e  # develop from 03.05.25
+    platform: https://github.com/pioarduino/platform-espressif32.git#54.03.20
+    # build_flags:
+    #   -mfix-esp32-psram-cache-issue
 
 esp32:
   flash_size: 4MB
@@ -14,12 +15,14 @@ esp32:
   #   type: arduino
   framework:
     type: esp-idf
-    version: latest
+    version: 5.4.0  # must match platform option!
     sdkconfig_options:
       # ESP32
       CONFIG_ESP32_DEFAULT_CPU_FREQ_240: "y"
       CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ: "240"
       CONFIG_ESP_MAIN_TASK_STACK_SIZE: "12000"
+#      CONFIG_STDATOMIC_S32C1I_SPIRAM_WORKAROUND: "n"
+
       # CONFIG_SPIRAM_USE_MEMMAP: "y"
       # CONFIG_SPIRAM_USE_CAPS_ALLOC: "y"
       # CONFIG_SPIRAM_USE_MALLOC: "y"
