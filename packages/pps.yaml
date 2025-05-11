@@ -35,14 +35,14 @@ number:
     m5stack_pps: pps1
     channel: voltage
     name: "Voltage"
-    id: set_voltage
+    id: pps_set_voltage
     web_server:
       sorting_group_id: pps_group
   - platform: m5stack_pps
     m5stack_pps: pps1
     channel: current
     name: "Current"
-    id: set_current
+    id: pps_set_current
     step: 0.05
     web_server:
       sorting_group_id: pps_group
@@ -51,6 +51,6 @@ switch:
   - platform: m5stack_pps
     m5stack_pps: pps1
     name: "Output enable"
-    id: oe_switch
+    id: pps_oe_switch
     web_server:
       sorting_group_id: pps_group

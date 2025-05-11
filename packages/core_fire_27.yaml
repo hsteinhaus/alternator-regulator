@@ -33,7 +33,7 @@ binary_sensor:
     on_press:
       then:
       - number.decrement:
-          id: set_current
+          id: pps_set_current
           cycle: false
 
   - platform: gpio
@@ -44,12 +44,12 @@ binary_sensor:
     on_press:
       then:
         - number.set:
-            id: set_voltage
+            id: pps_set_voltage
             value: 12.0
         - number.set:
-            id: set_current
+            id: pps_set_current
             value: 0.001
-        - switch.toggle: oe_switch
+        - switch.toggle: pps_oe_switch
 
   - platform: gpio
     name: "Button C"
@@ -64,7 +64,7 @@ binary_sensor:
     on_press:
       then:
       - number.increment:
-          id: set_current
+          id: pps_set_current
           cycle: false
 
 # GPIO pin of the display backlight
