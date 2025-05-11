@@ -6,41 +6,39 @@ external_components:
 state_machine:
   - name: "TempControl"
     states:
-      - name: "OFF"
+      - name: "IDLE"
+      - name: "VOLT_UP"
+      - name: "RAMP_UP"
+      - name: "BULK"
+      - name: "ABSORPTION"
+      - name: "FLOAT"
+      - name: "ERROR"
         on_enter:
           then:
-            - light.turn_off: backlight
-            - switch.turn_off: heater
-      - name: "ON"
-        on_enter:
-          then:
-            light.turn_on: backlight
-      - name: "HEATING"
-        on_enter:
-          then:
-            # protect against race between S3 firmware booting and power-on
-            - delay: 120s
-            - switch.turn_on: heater
         on_leave:
           then:
-            - delay: 1200s
-            - switch.turn_off: heater
     inputs:
-      - name: PWR_ON
+      - name: ACTIVATE
         transitions:
-          - OFF -> ON
-      - name: PWR_OFF
+          - IDLE -> VOLT_UP
+      - name: DEACTIVATE
         transitions:
-          - ON -> OFF
-          - HEATING -> OFF
-      - name: START_HEATER
+          - VOLT_UP -> IDLE
+          - RAMP_UP -> IDLE
+          - BULK -> IDLE
+          - ABSORBPTION -> IDLE
+          - FLOAT -> IDLE
+          - ERROR -> IDLE
+      - name: FAIL
         transitions:
-          - ON -> HEATING
-          - HEATING -> HEATING
-      - name: STOP_HEATER
-        transitions:
-          - HEATING -> ON
-          - ON -> ON
+          - IDLE -> ERROR
+          - VOLT_UP -> ERROR
+          - RAMP_UP -> ERROR
+          - BULK -> ERROR
+          - ABSORPTION -> ERROR
+          - FLOAT -> ERROR
+          - ERROR -> ERROR
+
     diagram: mermaid
     initial_state: "OFF"
 
