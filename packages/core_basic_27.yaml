@@ -2,17 +2,3 @@
 packages:
   core_fire_27:  !include core_fire_27.yaml
 
-sensor:
-  - platform: template
-    name: "Battery voltage"
-    id: v_bat
-  - platform: template
-    name: "Battery current"
-    id: i_bat
-    web_server:
-      sorting_group_id: bat_data
-  - platform: template
-    name: "Battery SoC"
-    id: soc
-    web_server:
-      sorting_group_id: bat_data

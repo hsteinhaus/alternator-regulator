@@ -6,7 +6,7 @@ packages:
   # core_s3: !include packages/core_s3.yaml
   # lvgl_gui: !include packages/lvgl_gui.yaml
   acq: !include packages/acq.yaml
-  current: !include packages/current.yaml
+  # current: !include packages/current.yaml
   pid: !include packages/pid.yaml
   pps: !include packages/pps.yaml
   bt: !include packages/bluetooth.yaml
@@ -118,3 +118,19 @@ color:
     green: 0%
     blue: 0%
 
+
+
+# sensor:
+#   - platform: template
+#     name: "Battery voltage"
+#     id: v_bat
+#   - platform: template
+#     name: "Battery current"
+#     id: i_bat
+#     web_server:
+#       sorting_group_id: bat_data
+#   - platform: template
+#     name: "Battery SoC"
+#     id: soc
+#     web_server:
+#       sorting_group_id: bat_data
