@@ -1,0 +1,91 @@
+[package]
+edition = "2021"
+name = "altreg-fire27-rs"
+rust-version = "1.86"
+version = "0.1.0"
+
+[[bin]]
+name = "altreg_fire27_rs"
+path = "./src/bin/main.rs"
+test = false
+bench = false
+
+[lib]
+test = false
+bench = false
+
+[dependencies]
+defmt = "1.0.1"
+#critical-section = "1.2.0"
+#static_cell = "2.1.1"
+heapless = "0.9.1"
+
+esp-alloc = "0.8.0"
+esp-backtrace = { version = "0.17.0", features = ["esp32", "exception-handler", "panic-handler", "defmt"] }
+esp-println = { version = "0.15.0", features = ["esp32", "defmt-espflash", "timestamp"] }
+
+esp-bootloader-esp-idf = { version = "0.2.0", features = ["esp32"] }
+esp-hal = { version = "=1.0.0-rc.0", features = ["esp32", "defmt", "unstable", "psram"] }
+esp-hal-embassy = { version = "0.9.0", features = ["esp32", "defmt"] }
+
+# for more networking protocol support see https://crates.io/crates/edge-net
+embassy-executor = { version = "0.7.0", features = ["defmt", "task-arena-size-20480"] }
+embassy-time = { version = "0.4.0", features = ["defmt"] }
+embassy-net = { version = "0.7.0", features = [
+    "dhcpv4",
+    "defmt",
+    "medium-ethernet",
+    "tcp",
+    "udp",
+] }
+embassy-futures = "0.1.2"
+embassy-embedded-hal = { version = "0.5.0", features = ["defmt", "time"] }
+
+esp-wifi = { version = "0.15.0", features = [
+    "ble",
+    "builtin-scheduler",
+    "coex",
+    "esp-alloc",
+    "esp32",
+    "defmt",
+    "smoltcp",
+    "wifi",
+] }
+smoltcp = { version = "0.12.0", default-features = false, features = [
+    "defmt",
+    "medium-ethernet",
+    "multicast",
+    "proto-dhcpv4",
+    "proto-dns",
+    "proto-ipv4",
+    "socket-dns",
+    "socket-icmp",
+    "socket-raw",
+    "socket-tcp",
+    "socket-udp",
+] }
+
+trouble-host = { version = "0.2.4", features = ["gatt", "scan", "defmt"] }
+bt-hci = { version = "0.3.2" }
+
+embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
+embedded-graphics = { version = "0.8.1", features = ["defmt"] }
+mipidsi = "0.9.0"
+embedded-hal = "1.0.0"
+static_cell = "2.1.1"
+#lvgl = { version = "0.6.2", features = ["alloc"] }
+
+
+[profile.dev]
+# Rust debug is too slow.
+# For debug builds always builds with some optimization
+opt-level = "s"
+
+[profile.release]
+codegen-units = 1     # LLVM can perform better optimizations using a single thread
+debug = 2
+debug-assertions = false
+incremental = false
+lto = 'fat'
+opt-level = 's'
+overflow-checks = false
