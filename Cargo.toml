@@ -5,20 +5,17 @@ rust-version = "1.86"
 version = "0.1.0"
 
 [[bin]]
-name = "altreg_fire27_rs"
-path = "./src/bin/main.rs"
+name = "altreg-fire27-rs"
+path = "src/main.rs"
 test = false
 bench = false
 
-[lib]
-test = false
-bench = false
 
 [dependencies]
 defmt = "1.0.1"
 #critical-section = "1.2.0"
-#static_cell = "2.1.1"
 heapless = "0.9.1"
+static_cell = "2.1.1"
 
 esp-alloc = "0.8.0"
 esp-backtrace = { version = "0.17.0", features = ["esp32", "exception-handler", "panic-handler", "defmt"] }
@@ -39,7 +36,7 @@ embassy-net = { version = "0.7.0", features = [
     "udp",
 ] }
 embassy-futures = "0.1.2"
-embassy-embedded-hal = { version = "0.5.0", features = ["defmt", "time"] }
+#embassy-embedded-hal = { version = "0.5.0", features = ["defmt", "time"] }
 
 esp-wifi = { version = "0.15.0", features = [
     "ble",
@@ -71,8 +68,7 @@ bt-hci = { version = "0.3.2" }
 embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
 embedded-graphics = { version = "0.8.1", features = ["defmt"] }
 mipidsi = "0.9.0"
-embedded-hal = "1.0.0"
-static_cell = "2.1.1"
+#embedded-hal = "1.0.0"
 #lvgl = { version = "0.6.2", features = ["alloc"] }
 
 

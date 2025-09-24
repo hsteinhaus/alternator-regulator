@@ -68,3 +68,9 @@ impl EventHandler for Printer {
         }
     }
 }
+
+#[embassy_executor::task]
+pub async fn ble_scan_task(transport: esp_wifi::ble::controller::BleConnector<'static>) {
+    let controller = bt_hci::controller::ExternalController::<_, 20>::new(transport);
+    run(controller).await;
+}
