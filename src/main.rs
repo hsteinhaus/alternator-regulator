@@ -17,13 +17,15 @@ use embassy_time::{Duration, Timer};
 
 use crate::ble_scan::ble_scan_task;
 use crate::board::startup;
+use crate::ui::ui_task;
 
 mod ble_scan;
 mod board;
 mod ui;
 mod util;
 
-
+#[allow(dead_code)]
+mod lvgl;
 
 #[esp_hal_embassy::main]
 async fn main(spawner: Spawner) {
@@ -35,6 +37,8 @@ async fn main(spawner: Spawner) {
     spawner
         .spawn(ble_scan_task(res.wifi_ble.ble_connector))
         .expect("Failed to spawn ble_scan_task");
+
+    spawner.spawn(ui_task(res.display));
 
     defmt::info!("Embassy initialized!");
     loop {

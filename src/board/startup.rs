@@ -29,7 +29,7 @@ impl Resources {
 
         esp_alloc::heap_allocator!(size: 64 * 1024);
         // COEX needs more RAM - so we've added some more
-        esp_alloc::heap_allocator!(#[unsafe(link_section = ".dram2_uninit")] size: 64 * 1024);
+        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 64000);
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);

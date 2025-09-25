@@ -1,8 +1,40 @@
+use cmake;
+use cmake::Config;
+
+
+
 fn main() {
     linker_be_nice();
     println!("cargo:rustc-link-arg=-Tdefmt.x");
     // make sure linkall.x is the last linker script (otherwise might cause problems with flip-link)
     println!("cargo:rustc-link-arg=-Tlinkall.x");
+
+    // Builds the project in the directory located in `libfoo`, installing it
+    // into $OUT_DIR
+//    let dst = cmake::build("3rdparty/lvgl");
+
+    // set(CMAKE_C_COMPILER arm-linux-gnueabi-gcc)
+    // set(CMAKE_CXX_COMPILER arm-linux-gnueabi-g++)
+    // set(CMAKE_C_COMPILER_ID GNU)  #Add these
+    // set(CMAKE_CXX_COMPILER_ID GNU)
+
+    let dst = Config::new("3rdparty/lvgl")
+        .define("CMAKE_C_COMPILER", "xtensa-esp32-elf-gcc")
+        .define("CMAKE_CXX_COMPILER", "xtensa-esp32-elf-g++")
+        .define("CMAKE_C_COMPILER_ID", "gnu")
+        .define("CMAKE_CXX_COMPILER_ID", "gnu")
+//        .cflag("-mtext-section-literals")
+        .cflag("-mlongcalls")
+        .cxxflag("-mlongcalls")
+        .build();
+
+    // println!("cargo:warning=!!!!!!!!!!!!!!!!!!!!");
+    // println!("cargo:warning={}", dst.display());
+    // println!("cargo:warning=!!!!!!!!!!!!!!!!!!!!");
+
+    println!("cargo:rustc-link-search=native={}/lib", dst.display());
+    println!("cargo:rustc-link-lib=static=lvgl");
+
 }
 
 fn linker_be_nice() {

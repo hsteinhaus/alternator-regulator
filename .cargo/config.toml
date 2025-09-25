@@ -4,11 +4,12 @@ runner = "espflash flash --monitor --chip esp32 --log-format defmt"
 [env]
 ESP_LOG="info"
 DEFMT_LOG="info"
-
+#DEP_LV_CONFIG_PATH={ value = "include", relative = true }
 
 [build]
 rustflags = [
   "-C", "link-arg=-nostartfiles",
+#  "-C", "llvm-args=-mtext-section-literals"
 ]
 
 target = "xtensa-esp32-none-elf"
