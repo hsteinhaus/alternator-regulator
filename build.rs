@@ -1,40 +1,41 @@
+use cc::Build;
 use cmake;
 use cmake::Config;
-
-
 
 fn main() {
     linker_be_nice();
     println!("cargo:rustc-link-arg=-Tdefmt.x");
     // make sure linkall.x is the last linker script (otherwise might cause problems with flip-link)
     println!("cargo:rustc-link-arg=-Tlinkall.x");
+    cmake_lvgl();
+    compile_lvgl_inline_wrappers();
+}
 
-    // Builds the project in the directory located in `libfoo`, installing it
-    // into $OUT_DIR
-//    let dst = cmake::build("3rdparty/lvgl");
+fn compile_lvgl_inline_wrappers() {
+    let mut cfg = Build::new();
+    cfg.compiler("xtensa-esp32-elf-gcc")
+        .include("./lvgl_rust_sys/lvgl")
+        .file("/tmp/bindgen/extern.c")
+        .compile("lvgl-inline-wrappers");
+    println!(
+        "cargo:info=Building for target {:?} using compiler {:?}",
+        std::env::var("TARGET"),
+        cfg.get_compiler().path()
+    );
+}
 
-    // set(CMAKE_C_COMPILER arm-linux-gnueabi-gcc)
-    // set(CMAKE_CXX_COMPILER arm-linux-gnueabi-g++)
-    // set(CMAKE_C_COMPILER_ID GNU)  #Add these
-    // set(CMAKE_CXX_COMPILER_ID GNU)
-
-    let dst = Config::new("3rdparty/lvgl")
+fn cmake_lvgl() {
+    let dst = Config::new("lvgl_rust_sys/lvgl")
         .define("CMAKE_C_COMPILER", "xtensa-esp32-elf-gcc")
         .define("CMAKE_CXX_COMPILER", "xtensa-esp32-elf-g++")
         .define("CMAKE_C_COMPILER_ID", "gnu")
         .define("CMAKE_CXX_COMPILER_ID", "gnu")
-//        .cflag("-mtext-section-literals")
         .cflag("-mlongcalls")
-        .cxxflag("-mlongcalls")
+        .cflag("-fkeep-inline-functions")
         .build();
-
-    // println!("cargo:warning=!!!!!!!!!!!!!!!!!!!!");
-    // println!("cargo:warning={}", dst.display());
-    // println!("cargo:warning=!!!!!!!!!!!!!!!!!!!!");
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
     println!("cargo:rustc-link-lib=static=lvgl");
-
 }
 
 fn linker_be_nice() {

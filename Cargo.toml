@@ -70,11 +70,11 @@ embedded-graphics = { version = "0.8.1", features = ["defmt"] }
 mipidsi = "0.9.0"
 #embedded-hal = "1.0.0"
 #lvgl = { git="https://github.com/lvgl/lv_binding_rust", branch="master", features = ["alloc", "rust_timer", "unsafe_no_autoinit", "nightly", "embedded-graphics"]}
-#lvgl-sys = { git="https://github.com/lvgl/lv_binding_rust", branch="master", features = [] }
-
+lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
 
 [build-dependencies]
 cmake = "0.1"
+cc = "1.2.38"
 
 [profile.dev]
 # Rust debug is too slow.

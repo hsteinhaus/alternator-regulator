@@ -4,7 +4,7 @@ runner = "espflash flash --monitor --chip esp32 --log-format defmt"
 [env]
 ESP_LOG="info"
 DEFMT_LOG="info"
-#DEP_LV_CONFIG_PATH={ value = "include", relative = true }
+DEP_LV_CONFIG_PATH={ value = "./lvgl_rust_sys/lvgl", relative = true }
 
 [build]
 rustflags = [

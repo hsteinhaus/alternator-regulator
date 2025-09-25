@@ -24,9 +24,6 @@ mod board;
 mod ui;
 mod util;
 
-#[allow(dead_code)]
-mod lvgl;
-
 #[esp_hal_embassy::main]
 async fn main(spawner: Spawner) {
     let mut res = startup::Resources::initialize();
