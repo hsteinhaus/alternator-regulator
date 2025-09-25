@@ -27,9 +27,8 @@ impl Resources {
         let config = var_name;
         let peripherals = esp_hal::init(config);
 
-        esp_alloc::heap_allocator!(size: 64 * 1024);
-        // COEX needs more RAM - so we've added some more
-        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 64000);
+        esp_alloc::heap_allocator!(size: 20 * 1024);  // 27kB is max for the heap, otherwise "cannot move location counter backwards"
+        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 64000); // COEX needs more RAM - so we've added some more
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);
