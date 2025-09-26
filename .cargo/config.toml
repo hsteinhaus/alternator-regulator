@@ -1,15 +1,17 @@
 [target.xtensa-esp32-none-elf]
-runner = "espflash flash --monitor --chip esp32 --log-format defmt"
+runner = "espflash flash --monitor --chip esp32 --log-format defmt --baud 1000000"
 
 [env]
 ESP_LOG="info"
 DEFMT_LOG="info"
 DEP_LV_CONFIG_PATH={ value = "./lvgl_rust_sys/lvgl", relative = true }
+ESP_HAL_CONFIG_PLACE_SPI_MASTER_DRIVER_IN_RAM="true"
+
 
 [build]
 rustflags = [
   "-C", "link-arg=-nostartfiles",
-#  "-C", "llvm-args=-mtext-section-literals"
+  "-C", "link-args=-Wl,-Map=target/app.map"
 ]
 
 target = "xtensa-esp32-none-elf"
