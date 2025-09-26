@@ -1,8 +1,8 @@
-use std::env;
-use std::path::{Path, PathBuf};
 use cc::Build;
 use cmake;
 use cmake::Config;
+use std::env;
+use std::path::{Path, PathBuf};
 
 fn main() {
     linker_be_nice();
@@ -62,9 +62,7 @@ fn linker_be_nice() {
                     eprintln!("💡 Is the linker script `linkall.x` missing?");
                     eprintln!();
                 }
-                "esp_wifi_preempt_enable"
-                | "esp_wifi_preempt_yield_task"
-                | "esp_wifi_preempt_task_create" => {
+                "esp_wifi_preempt_enable" | "esp_wifi_preempt_yield_task" | "esp_wifi_preempt_task_create" => {
                     eprintln!();
                     eprintln!("💡 `esp-wifi` has no scheduler enabled. Make sure you have the `builtin-scheduler` feature enabled, or that you provide an external scheduler.");
                     eprintln!();
@@ -90,7 +88,6 @@ fn linker_be_nice() {
         std::env::current_exe().unwrap().display()
     );
 }
-
 
 fn canonicalize(path: impl AsRef<Path>) -> PathBuf {
     let canonicalized = path.as_ref().canonicalize().unwrap();

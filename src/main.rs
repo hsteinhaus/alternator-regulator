@@ -13,13 +13,13 @@ use defmt::info;
 use esp_backtrace as _;
 use esp_println as _;
 
+use crate::ble_scan::ble_scan_task;
+use crate::board::startup;
+use crate::ui::ui_task;
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
 use esp_alloc::HeapStats;
 use esp_println::println;
-use crate::ble_scan::ble_scan_task;
-use crate::board::startup;
-use crate::ui::ui_task;
 
 mod ble_scan;
 mod board;
@@ -37,9 +37,7 @@ async fn main(spawner: Spawner) {
         .spawn(ble_scan_task(res.wifi_ble.ble_connector))
         .expect("Failed to spawn ble_scan_task");
 
-    spawner
-        .spawn(ui_task(res.display))
-        .expect("Failed to spawn ui_task");
+    spawner.spawn(ui_task(res.display)).expect("Failed to spawn ui_task");
 
     defmt::info!("Embassy initialized!");
     loop {

@@ -13,7 +13,7 @@ const L2CAP_CHANNELS_MAX: usize = 1;
 
 pub async fn run<C>(controller: C)
 where
-    C: Controller + ControllerCmdSync<LeSetScanParams>
+    C: Controller + ControllerCmdSync<LeSetScanParams>,
 {
     // Using a fixed "random" address can be useful for testing. In real scenarios, one would
     // use e.g. the MAC 6 byte array as the address (how to get that varies by the platform).
@@ -21,14 +21,11 @@ where
 
     defmt::info!("Our address = {:?}", address);
 
-    let mut resources: HostResources<DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX> =
-        HostResources::new();
+    let mut resources: HostResources<DefaultPacketPool, CONNECTIONS_MAX, L2CAP_CHANNELS_MAX> = HostResources::new();
     let stack = trouble_host::new(controller, &mut resources).set_random_address(address);
 
     let Host {
-        central,
-        mut runner,
-        ..
+        central, mut runner, ..
     } = stack.build();
 
     let printer = Printer {
