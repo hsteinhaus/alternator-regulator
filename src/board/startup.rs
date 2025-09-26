@@ -1,3 +1,4 @@
+use crate::board::driver::display::DisplayDriver;
 use alloc::boxed::Box;
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
@@ -7,12 +8,9 @@ use esp_hal::{
     spi::master::{Config, Spi},
     spi::Mode,
     time::Rate,
-    timer::{AnyTimer, timg::TimerGroup},
+    timer::{timg::TimerGroup, AnyTimer},
 };
-
 use mipidsi::interface::SpiInterface;
-use crate::board::driver::display::DisplayDriver;
-
 
 pub struct Resources {
     pub(crate) display: DisplayDriver,
@@ -20,14 +18,12 @@ pub struct Resources {
 }
 
 impl Resources {
-
-    pub(crate) fn initialize() -> Self
-    {
+    pub(crate) fn initialize() -> Self {
         let var_name = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
         let config = var_name;
         let peripherals = esp_hal::init(config);
 
-        esp_alloc::heap_allocator!(size: 20 * 1024);  // 27kB is max for the heap, otherwise "cannot move location counter backwards"
+        //        esp_alloc::heap_allocator!(size: 11 * 1024);  // 11kB is max for the heap, otherwise "cannot move location counter backwards"
         esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 64000); // COEX needs more RAM - so we've added some more
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
@@ -45,10 +41,10 @@ impl Resources {
                 .with_frequency(Rate::from_khz(40000))
                 .with_mode(Mode::_0),
         )
-            .unwrap()
-            .with_sck(sclk)
-            .with_mosi(mosi) // order matters
-            .into_async();
+        .unwrap()
+        .with_sck(sclk)
+        .with_mosi(mosi) // order matters
+        .into_async();
 
         let bl_output = Output::new(bl, Level::High, OutputConfig::default());
         let cs_output = Output::new(cs, Level::High, OutputConfig::default());
@@ -69,6 +65,9 @@ impl Resources {
             peripherals.RNG,
         );
 
-        Self {display: d, wifi_ble: wifi_driver}
+        Self {
+            display: d,
+            wifi_ble: wifi_driver,
+        }
     }
 }
