@@ -17,12 +17,12 @@ defmt = "1.0.1"
 heapless = "0.9.1"
 static_cell = "2.1.1"
 
-esp-alloc = "0.8.0"
+esp-alloc = { version = "0.8.0", features = ["defmt", "internal-heap-stats"] }
 esp-backtrace = { version = "0.17.0", features = ["esp32", "exception-handler", "panic-handler", "defmt"] }
 esp-println = { version = "0.15.0", features = ["esp32", "defmt-espflash", "timestamp"] }
 
 esp-bootloader-esp-idf = { version = "0.2.0", features = ["esp32"] }
-esp-hal = { version = "=1.0.0-rc.0", features = ["esp32", "defmt", "unstable", "psram"] }
+esp-hal = { version = "=1.0.0-rc.0", features = ["esp32", "defmt", "unstable", ] }
 esp-hal-embassy = { version = "0.9.0", features = ["esp32", "defmt"] }
 
 # for more networking protocol support see https://crates.io/crates/edge-net
@@ -69,8 +69,8 @@ embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
 embedded-graphics = { version = "0.8.1", features = ["defmt"] }
 mipidsi = "0.9.0"
 #embedded-hal = "1.0.0"
-#lvgl = { git="https://github.com/lvgl/lv_binding_rust", branch="master", features = ["alloc", "rust_timer", "unsafe_no_autoinit", "nightly", "embedded-graphics"]}
 lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
+log = "0.4.28"
 
 [build-dependencies]
 cmake = "0.1"
