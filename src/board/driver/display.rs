@@ -61,6 +61,7 @@ impl DisplayDriver {
         }
     }
 
+    #[allow(dead_code)]
     pub fn draw_smiley(&mut self) -> Result<(), <D as DrawTarget>::Error> {
         // Draw the left eye as a circle located at (50, 100), with a diameter of 40, filled with white
         Circle::new(Point::new(50, 100), 40)

@@ -28,7 +28,7 @@ mod util;
 
 #[esp_hal_embassy::main]
 async fn main(spawner: Spawner) {
-    let mut res = startup::Resources::initialize();
+    let res = startup::Resources::initialize();
     // Draw a smiley face with white eyes and a red mouth
     //res.display.draw_smiley().unwrap();
 
