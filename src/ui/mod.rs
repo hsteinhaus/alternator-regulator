@@ -1,14 +1,21 @@
 mod lvgl;
 
 use crate::board::driver::display::DisplayDriver;
-use alloc::ffi::CString;
+use crate::ui::lvgl::{Bar, Label, Meter};
 use core::ffi::{c_char, c_void, CStr};
 use defmt::{debug, warn};
 use embassy_time::{Duration, Timer};
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::{DrawTarget, Point};
 use embedded_graphics::primitives::Rectangle;
-use lvgl_rust_sys::{lv_area_t, lv_bar_create, lv_bar_set_range, lv_color_hex, lv_color_t, lv_disp_drv_t, lv_disp_flush_ready, lv_font_montserrat_14, lv_font_montserrat_40, lv_init, lv_label_create, lv_label_set_text, lv_log_register_print_cb, lv_meter_add_arc, lv_meter_add_needle_line, lv_meter_add_scale, lv_meter_create, lv_meter_set_indicator_value, lv_obj_align, lv_obj_set_height, lv_obj_set_style_bg_color, lv_obj_set_style_pad_bottom, lv_obj_set_style_pad_left, lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_obj_set_style_text_align, lv_obj_set_style_text_font, lv_obj_set_width, lv_obj_set_x, lv_obj_set_y, lv_scr_act, lv_text_align_t, lv_tick_inc, lv_timer_handler, LV_ALIGN_CENTER, LV_ALIGN_LEFT_MID, LV_ALIGN_RIGHT_MID, LV_DISP_DEF_REFR_PERIOD, LV_PART_MAIN, LV_TEXT_ALIGN_RIGHT};
+use lvgl_rust_sys::{
+    lv_align_t, lv_area_t, lv_color_t, lv_disp_drv_t, lv_disp_flush_ready, lv_font_montserrat_14,
+    lv_font_montserrat_40, lv_init, lv_log_register_print_cb, lv_obj_set_style_pad_bottom,
+    lv_obj_set_style_pad_left, lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act,
+    lv_text_align_t, lv_tick_inc, lv_timer_handler, LV_ALIGN_CENTER, LV_ALIGN_LEFT_MID,
+    LV_ALIGN_RIGHT_MID, LV_ALIGN_TOP_LEFT, LV_ALIGN_TOP_RIGHT, LV_DISP_DEF_REFR_PERIOD,
+    LV_TEXT_ALIGN_RIGHT,
+};
 
 extern "C" {
     pub fn lvgl_disp_init(
@@ -70,89 +77,61 @@ pub async unsafe fn ui_task(display_driver: DisplayDriver) {
         flush_cb,
         &display_driver as *const DisplayDriver as *mut c_void,
     );
-    //lv_obj_set_style_bg_color(lv_scr_act(), lv_color_hex(0x003a57), LV_PART_MAIN);
-    lv_obj_set_style_pad_top(lv_scr_act(), 6, 0);
-    lv_obj_set_style_pad_bottom(lv_scr_act(), 6, 0);
-    lv_obj_set_style_pad_left(lv_scr_act(), 12, 0);
-    lv_obj_set_style_pad_right(lv_scr_act(), 12, 0);
 
-    let meter = lv_meter_create(lv_scr_act());
-    lv_obj_align(meter, LV_ALIGN_CENTER.try_into().unwrap(), 0, 0);
-    lv_obj_set_width(meter, 228);
-    lv_obj_set_height(meter, 228);
-    let scale = lv_meter_add_scale(meter);
-    (*scale).min = 0;
-    (*scale).max = 150;
-    (*scale).angle_range = 240;
-    (*scale).rotation = 150;
-    let needle = lv_meter_add_needle_line(meter, scale, 5, lv_color_hex(0xff0000), -4);
-    let green_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0x009f00), 10);
-    (*green_arc).start_value = 0;
-    (*green_arc).end_value = 99;
-    let yellow_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0xffff00), 10);
-    (*yellow_arc).start_value = 100;
-    (*yellow_arc).end_value = 119;
-    let red_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0xff0000), 10);
-    (*red_arc).start_value = 120;
-    (*red_arc).end_value = 150;
-    let scale2 = lv_meter_add_scale(meter);
-    (*scale2).min = 0;
-    (*scale2).max = 150;
-    (*scale2).angle_range = 240;
-    (*scale2).rotation = 150;
-    (*scale2).tick_width = 1;
-    (*scale2).tick_cnt = 51;
-    (*scale2).tick_length = 10;
-    (*scale2).tick_color = lv_color_hex(0x000000);
-    (*scale2).tick_major_nth = 5;
-    (*scale2).tick_major_width = 2;
-    (*scale2).tick_major_length = 10;
-    (*scale2).tick_major_color = lv_color_hex(0x404040);
-    (*scale2).label_gap = 10;
-    lv_obj_set_style_text_font(meter, &lv_font_montserrat_14, 0);
-    lv_meter_set_indicator_value(meter, needle, 42);
-
-    let label = lv_label_create(meter);
-    lv_obj_align(label, LV_ALIGN_CENTER.try_into().unwrap(), 0, 50);
-    let c_str = CString::new("-.-").unwrap();
-    let c_world: *mut c_char = c_str.as_ptr() as *mut c_char;
-    lv_obj_set_style_text_font(label, &lv_font_montserrat_40, 0);
-    lv_label_set_text(label, c_world);
-
-    let label = lv_label_create(meter);
-    lv_obj_align(label, LV_ALIGN_CENTER.try_into().unwrap(), 0, 75);
-    let c_str = CString::new("Amps").unwrap();
-    let c_world: *mut c_char = c_str.as_ptr() as *mut c_char;
-    lv_label_set_text(label, c_world);
-
-    let field_voltage_bar = lv_bar_create(lv_scr_act());
-    lv_obj_set_width(field_voltage_bar, 12);
-    lv_obj_set_height(field_voltage_bar, 228);
-    lv_bar_set_range(field_voltage_bar, 0, 300);
-
-    let field_voltage_label = lv_label_create(lv_scr_act());
-    lv_obj_set_x(field_voltage_label, 18);
-    let c_str = CString::new("1.3V").unwrap();
-    let c_world: *mut c_char = c_str.as_ptr() as *mut c_char;
-    lv_label_set_text(field_voltage_label, c_world);
-
-    let field_current_bar = lv_bar_create(lv_scr_act());
-    lv_obj_set_width(field_current_bar, 12);
-    lv_obj_set_height(field_current_bar, 228);
-    lv_bar_set_range(field_current_bar, 0, 50);
-    lv_obj_align(field_current_bar, LV_ALIGN_RIGHT_MID.try_into().unwrap(), 0, 0);
-
-    let field_current_label = lv_label_create(lv_scr_act());
-    lv_obj_set_x(field_current_label, 226);
-    lv_obj_set_width(field_current_label, 50);
-    lv_obj_set_style_text_align(field_current_label, LV_TEXT_ALIGN_RIGHT as lv_text_align_t, 0);
-    let c_str = CString::new("-0.0A").unwrap();
-    let c_world: *mut c_char = c_str.as_ptr() as *mut c_char;
-    lv_label_set_text(field_current_label, c_world);
+    create_widgets(); // Call the refactored widget creation function
 
     loop {
         lv_timer_handler();
         Timer::after(Duration::from_millis(LV_DISP_DEF_REFR_PERIOD as u64)).await;
         lv_tick_inc(LV_DISP_DEF_REFR_PERIOD);
     }
+}
+
+fn create_widgets() {
+    unsafe {
+        lv_obj_set_style_pad_top(lv_scr_act(), 6, 0);
+        lv_obj_set_style_pad_bottom(lv_scr_act(), 6, 0);
+        lv_obj_set_style_pad_left(lv_scr_act(), 12, 0);
+        lv_obj_set_style_pad_right(lv_scr_act(), 12, 0);
+    };
+    let screen = unsafe {lv_scr_act() };
+    assert!(!screen.is_null());
+
+    // Create and configure the meter
+    let meter = Meter::new(screen);
+    meter.set_value(42);
+
+    // Create labels for the meter
+    let _label1 = Label::new(meter.get_handle())
+        .text("-.-")
+        .align(LV_ALIGN_CENTER as lv_align_t, 0, 50)
+        .font(unsafe { &lv_font_montserrat_40 });
+
+    let _label2 = Label::new(meter.get_handle())
+        .text("Amps")
+        .align(LV_ALIGN_CENTER as lv_align_t, 0, 75)
+        .font(unsafe{ &lv_font_montserrat_14 });
+
+    // Create bars for field voltage and current
+    let _field_voltage_bar = Bar::new(screen)
+        .width(12)
+        .height(228)
+        .range(0, 300);
+
+    let _field_current_bar = Bar::new(screen)
+        .width(12)
+        .height(228)
+        .range(0, 50)
+        .align(LV_ALIGN_RIGHT_MID as lv_align_t, 0, 0);
+
+    // Create labels for field voltage and current
+    let _field_voltage_label = Label::new(screen)
+        .x(18)
+        .text("1.3V");
+
+    let _field_current_label = Label::new(screen)
+        .x(228)
+        .width(50)
+        .text("-0.0A")
+        .text_align(LV_TEXT_ALIGN_RIGHT as lv_text_align_t);
 }
