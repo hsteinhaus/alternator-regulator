@@ -1,7 +1,7 @@
 mod lvgl;
 
 use crate::board::driver::display::DisplayDriver;
-use crate::ui::lvgl::{Bar, Label, Meter};
+use crate::ui::lvgl::{Bar, Label, Meter, Widget};
 use core::ffi::{c_char, c_void, CStr};
 use defmt::{debug, warn};
 use embassy_time::{Duration, Timer};
@@ -9,11 +9,9 @@ use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::{DrawTarget, Point};
 use embedded_graphics::primitives::Rectangle;
 use lvgl_rust_sys::{
-    lv_align_t, lv_area_t, lv_color_t, lv_disp_drv_t, lv_disp_flush_ready, lv_font_montserrat_14,
-    lv_font_montserrat_40, lv_init, lv_log_register_print_cb, lv_obj_set_style_pad_bottom,
-    lv_obj_set_style_pad_left, lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act,
-    lv_text_align_t, lv_tick_inc, lv_timer_handler, LV_ALIGN_CENTER, LV_ALIGN_LEFT_MID,
-    LV_ALIGN_RIGHT_MID, LV_ALIGN_TOP_LEFT, LV_ALIGN_TOP_RIGHT, LV_DISP_DEF_REFR_PERIOD,
+    lv_align_t, lv_area_t, lv_color_t, lv_disp_drv_t, lv_disp_flush_ready, lv_init, lv_log_register_print_cb,
+    lv_obj_set_style_pad_bottom, lv_obj_set_style_pad_left, lv_obj_set_style_pad_right, lv_obj_set_style_pad_top,
+    lv_scr_act, lv_text_align_t, lv_tick_inc, lv_timer_handler, LV_ALIGN_RIGHT_MID, LV_DISP_DEF_REFR_PERIOD,
     LV_TEXT_ALIGN_RIGHT,
 };
 
@@ -25,11 +23,7 @@ extern "C" {
 }
 
 // void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
-unsafe extern "C" fn flush_cb(
-    disp_drv_p: *mut lv_disp_drv_t,
-    area_p: *const lv_area_t,
-    color_p: *mut lv_color_t,
-) {
+unsafe extern "C" fn flush_cb(disp_drv_p: *mut lv_disp_drv_t, area_p: *const lv_area_t, color_p: *mut lv_color_t) {
     if let Some(disp_drv) = disp_drv_p.as_mut() {
         if let Some(area) = area_p.as_ref() {
             let p1 = Point::new(area.x1 as i32, area.y1 as i32);
@@ -41,9 +35,7 @@ unsafe extern "C" fn flush_cb(
             if let Some(display) = (disp_drv.user_data as *mut DisplayDriver).as_mut() {
                 if !color_p.is_null() {
                     let color_p = color_p as *const Rgb565;
-                    let colors_it = core::slice::from_raw_parts(color_p, (w * h) as usize)
-                        .iter()
-                        .cloned();
+                    let colors_it = core::slice::from_raw_parts(color_p, (w * h) as usize).iter().cloned();
                     display
                         .fill_contiguous(&r, colors_it)
                         .expect("Failed to fill contiguous color");
@@ -73,10 +65,7 @@ pub async unsafe fn ui_task(display_driver: DisplayDriver) {
     lv_init();
     lv_log_register_print_cb(Some(my_print)); /* register print function for debugging */
 
-    lvgl_disp_init(
-        flush_cb,
-        &display_driver as *const DisplayDriver as *mut c_void,
-    );
+    lvgl_disp_init(flush_cb, &display_driver as *const DisplayDriver as *mut c_void);
 
     create_widgets(); // Call the refactored widget creation function
 
@@ -94,40 +83,25 @@ fn create_widgets() {
         lv_obj_set_style_pad_left(lv_scr_act(), 12, 0);
         lv_obj_set_style_pad_right(lv_scr_act(), 12, 0);
     };
-    let screen = unsafe {lv_scr_act() };
+    let screen = unsafe { lv_scr_act() };
     assert!(!screen.is_null());
 
     // Create and configure the meter
     let meter = Meter::new(screen);
-    meter.set_value(42);
-
-    // Create labels for the meter
-    let _label1 = Label::new(meter.get_handle())
-        .text("-.-")
-        .align(LV_ALIGN_CENTER as lv_align_t, 0, 50)
-        .font(unsafe { &lv_font_montserrat_40 });
-
-    let _label2 = Label::new(meter.get_handle())
-        .text("Amps")
-        .align(LV_ALIGN_CENTER as lv_align_t, 0, 75)
-        .font(unsafe{ &lv_font_montserrat_14 });
+    meter.set_value(122.);
 
     // Create bars for field voltage and current
-    let _field_voltage_bar = Bar::new(screen)
-        .width(12)
-        .height(228)
-        .range(0, 300);
+    let _field_voltage_bar = Bar::new(screen).width(12).height(228).range(0, 300);
 
-    let _field_current_bar = Bar::new(screen)
-        .width(12)
-        .height(228)
-        .range(0, 50)
-        .align(LV_ALIGN_RIGHT_MID as lv_align_t, 0, 0);
+    let _field_current_bar =
+        Bar::new(screen)
+            .width(12)
+            .height(228)
+            .range(0, 50)
+            .align(LV_ALIGN_RIGHT_MID as lv_align_t, 0, 0);
 
     // Create labels for field voltage and current
-    let _field_voltage_label = Label::new(screen)
-        .x(18)
-        .text("1.3V");
+    let _field_voltage_label = Label::new(screen).x(18).text("1.3V");
 
     let _field_current_label = Label::new(screen)
         .x(228)
