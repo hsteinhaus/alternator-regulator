@@ -1,6 +1,6 @@
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::{Circle, PrimitiveStyle, Triangle};
+use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle, Triangle};
 //use esp_hal::peripherals::DMA_SPI2;
 
 use embedded_hal_bus::spi::ExclusiveDevice;
@@ -91,5 +91,49 @@ impl DisplayDriver {
         .draw(self.display)?;
 
         Ok(())
+    }
+}
+
+
+impl DrawTarget for DisplayDriver {
+    type Color = Rgb565;
+    type Error = <D as DrawTarget>::Error;
+
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        // Forward the draw_iter call to the `display` implementation
+        self.display.draw_iter(pixels)
+    }
+
+    fn fill_solid(
+        &mut self,
+        area: &Rectangle,
+        color: Self::Color,
+    ) -> Result<(), Self::Error> {
+        // Forward the fill_solid call to the `display` implementation
+        self.display.fill_solid(area, color)
+    }
+
+    fn fill_contiguous<I>(
+        &mut self,
+        area: &Rectangle,
+        colors: I,
+    ) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Self::Color>,
+    {
+        // Forward the fill_contiguous call to the `display` implementation
+        self.display.fill_contiguous(area, colors)
+    }
+
+}
+
+// Ensure we support getting the size of the display
+impl OriginDimensions for DisplayDriver {
+    fn size(&self) -> Size {
+        // Forward the size computation to the `display` implementation
+        self.display.size()
     }
 }
