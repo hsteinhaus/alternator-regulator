@@ -1,26 +1,28 @@
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle, Triangle};
-//use esp_hal::peripherals::DMA_SPI2;
 
 use embedded_hal_bus::spi::ExclusiveDevice;
 
-use esp_hal::{delay::Delay, gpio::Output, spi::master::Spi, Async};
+use esp_hal::{delay::Delay, gpio::Output, Async};
+use esp_hal::spi::master::SpiDmaBus;
 use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
 use static_cell::StaticCell;
 
-//pub type DisplayDmaChannel<'a> = DMA_SPI2<'a>;
 pub type DisplayInterface<'a> = SpiInterface<'static, DisplaySpi<'a>, Output<'static>>;
-//pub type DisplaySpi<'d> = ExclusiveDevice<SpiDmaBus<'d, Async>, DummyOutputPin, Delay>;
-pub type DisplaySpi<'d> = ExclusiveDevice<Spi<'d, Async>, Output<'static>, Delay>;
+pub type DisplaySpi<'d> = ExclusiveDevice<SpiDmaBus<'d, Async>, Output<'static>, Delay>;
 
-//type DisplayType = mipidsi::Display<SpiInterface<'static, ExclusiveDevice<SPI, Output<'static>, NoDelay>, Output<'static>>, ILI9342CRgb565, Output<'static>>;
 
 type D = mipidsi::Display<
-    SpiInterface<'static, ExclusiveDevice<Spi<'static, Async>, Output<'static>, Delay>, Output<'static>>,
+    SpiInterface<'static, ExclusiveDevice<SpiDmaBus<'static, Async>, Output<'static>, Delay>, Output<'static>>,
     ILI9342CRgb565,
     Output<'static>,
 >;
+
+
+//mipidsi::Display<SpiInterface<ExclusiveDevice<SpiDmaBus<…>,Output,Delay>,Output>,ILI9342CRgb565,Output>
+
+
 
 #[allow(dead_code)]
 pub struct DisplayDriver {
@@ -31,8 +33,6 @@ pub struct DisplayDriver {
 impl DisplayDriver {
     pub fn new(spi: DisplayInterface<'static>, mut bl: Output<'static>, mut rst: Output<'static>) -> Self {
         let mut delay = Delay::new();
-        //let buffer = Box::leak(Box::new([0_u8; 512]));
-
         rst.set_high();
         static DISPLAY: StaticCell<D> = StaticCell::new();
         let display = DISPLAY.init(
@@ -42,7 +42,7 @@ impl DisplayDriver {
                 .display_size(320, 240)
                 .reset_pin(rst)
                 .init(&mut delay)
-                .unwrap(),
+                .unwrap()
         );
         display.clear(Rgb565::BLACK).unwrap();
         bl.set_high();

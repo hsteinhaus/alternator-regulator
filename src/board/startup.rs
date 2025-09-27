@@ -1,15 +1,8 @@
-use crate::board::driver::display::DisplayDriver;
+use crate::board::driver::display::{DisplayDriver};
 use alloc::boxed::Box;
 use embedded_hal_bus::spi::ExclusiveDevice;
-use esp_hal::{
-    clock::CpuClock,
-    delay::Delay,
-    gpio::{Level, Output, OutputConfig},
-    spi::master::{Config, Spi},
-    spi::Mode,
-    time::Rate,
-    timer::{timg::TimerGroup, AnyTimer},
-};
+use esp_hal::{clock::CpuClock, delay::Delay, dma_buffers, gpio::{Level, Output, OutputConfig}, spi::master::{Config, Spi}, spi::Mode, time::Rate, timer::{timg::TimerGroup, AnyTimer}};
+use esp_hal::dma::{DmaRxBuf, DmaTxBuf};
 use mipidsi::interface::SpiInterface;
 
 pub struct Resources {
@@ -23,7 +16,7 @@ impl Resources {
         let config = var_name;
         let peripherals = esp_hal::init(config);
 
-        //        esp_alloc::heap_allocator!(size: 11 * 1024);  // 11kB is max for the heap, otherwise "cannot move location counter backwards"
+        // esp_alloc::heap_allocator!(size: 12 * 1024);  // 11kB is max for the heap, otherwise "cannot move location counter backwards"
         esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 64000); // COEX needs more RAM - so we've added some more
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
@@ -35,15 +28,22 @@ impl Resources {
         let cs = peripherals.GPIO14;
         let bl = peripherals.GPIO32;
 
+        let (rx_buffer, rx_descriptors, tx_buffer, tx_descriptors) = dma_buffers!(4092);
+        let display_dma_channel = peripherals.DMA_SPI2;
+        let dma_tx_buf = DmaTxBuf::new(tx_descriptors, tx_buffer).unwrap();
+        let dma_rx_buf = DmaRxBuf::new(rx_descriptors, rx_buffer).unwrap();
+
         let spi = Spi::new(
             peripherals.SPI2,
             Config::default()
-                .with_frequency(Rate::from_khz(40000))
+                .with_frequency(Rate::from_mhz(40))
                 .with_mode(Mode::_0),
         )
         .unwrap()
         .with_sck(sclk)
         .with_mosi(mosi) // order matters
+        .with_dma(display_dma_channel)
+        .with_buffers(dma_rx_buf, dma_tx_buf)
         .into_async();
 
         let bl_output = Output::new(bl, Level::High, OutputConfig::default());
