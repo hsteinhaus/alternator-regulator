@@ -1,27 +1,23 @@
-use embedded_graphics::pixelcolor::Rgb565;
-use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle, Triangle};
-
-use embedded_hal_bus::spi::ExclusiveDevice;
-
-use esp_hal::{delay::Delay, gpio::Output, Async};
-use esp_hal::spi::master::SpiDmaBus;
-use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
 use static_cell::StaticCell;
+use embedded_graphics::prelude::*;
+use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle, Triangle};
+use embedded_hal_bus::spi::ExclusiveDevice;
+use esp_hal::{
+    delay::Delay,
+    gpio::Output, Async,
+    spi::master::SpiDmaBus
+};
+use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
 
-pub type DisplayInterface<'a> = SpiInterface<'static, DisplaySpi<'a>, Output<'static>>;
-pub type DisplaySpi<'d> = ExclusiveDevice<SpiDmaBus<'d, Async>, Output<'static>, Delay>;
-
+pub type DisplayInterface<'a> = SpiInterface<'a, ExclusiveDevice<SpiDmaBus<'a, Async>, Output<'a>, Delay>, Output<'a>>;
+pub type DisplaySpiDevice<'d> = ExclusiveDevice<SpiDmaBus<'d, Async>, Output<'d>, Delay>;
 
 type D = mipidsi::Display<
-    SpiInterface<'static, ExclusiveDevice<SpiDmaBus<'static, Async>, Output<'static>, Delay>, Output<'static>>,
+    DisplayInterface<'static>,
     ILI9342CRgb565,
     Output<'static>,
 >;
-
-
-//mipidsi::Display<SpiInterface<ExclusiveDevice<SpiDmaBus<…>,Output,Delay>,Output>,ILI9342CRgb565,Output>
-
 
 
 #[allow(dead_code)]
@@ -31,12 +27,17 @@ pub struct DisplayDriver {
 }
 
 impl DisplayDriver {
-    pub fn new(spi: DisplayInterface<'static>, mut bl: Output<'static>, mut rst: Output<'static>) -> Self {
-        let mut delay = Delay::new();
+    pub fn new(spi_device: DisplaySpiDevice<'static>, mut bl: Output<'static>, mut rst: Output<'static>, mut dc: Output<'static>) -> Self
+    {
+        static BUFFER: StaticCell<[u8;128]> = StaticCell::new();
+        let buf: &'static mut [u8] = BUFFER.init([0_u8; 128]);
+        let di = SpiInterface::new(spi_device, dc, buf);
+
         rst.set_high();
+        let mut delay = Delay::new();
         static DISPLAY: StaticCell<D> = StaticCell::new();
         let display = DISPLAY.init(
-            Builder::new(ILI9342CRgb565, spi)
+            Builder::new(ILI9342CRgb565, di)
                 .invert_colors(mipidsi::options::ColorInversion::Inverted)
                 .color_order(mipidsi::options::ColorOrder::Bgr)
                 .display_size(320, 240)
