@@ -4,11 +4,11 @@
 #define screenHeight 240
 
 static lv_disp_draw_buf_t draw_buf;
-static lv_color_t buf[ screenWidth * screenHeight / 10 ];
+static lv_color_t buf[ screenWidth * 10];
 static lv_disp_drv_t disp_drv;
 
 void lvgl_disp_init(void(*flush_cb)( lv_disp_drv_t*, const lv_area_t *, lv_color_t *), void* user_data) {
-    lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth * screenHeight / 10 );
+    lv_disp_draw_buf_init( &draw_buf, buf, NULL, screenWidth *10);
 
     /*Initialize the display*/
     lv_disp_drv_init( &disp_drv );
