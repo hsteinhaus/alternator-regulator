@@ -8,27 +8,26 @@
 
 extern crate alloc;
 
-use defmt;
 use defmt::info;
 use esp_backtrace as _;
 use esp_println as _;
 
-use crate::ble_scan::ble_scan_task;
+use task::ble_scan::ble_scan_task;
 use crate::board::startup;
 use crate::ui::ui_task;
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
-use esp_alloc::HeapStats;
-use esp_println::println;
+// use esp_alloc::HeapStats;
+// use esp_println::println;
 
-mod ble_scan;
 mod board;
 mod ui;
 mod util;
+mod task;
 
 #[esp_hal_embassy::main]
 async fn main(spawner: Spawner) {
-    let mut res = startup::Resources::initialize();
+    let res = startup::Resources::initialize();
     // Draw a smiley face with white eyes and a red mouth
     //res.display.draw_smiley().unwrap();
 
@@ -40,20 +39,19 @@ async fn main(spawner: Spawner) {
     spawner.spawn(ui_task(res.display)).expect("Failed to spawn ui_task");
 
     defmt::info!("Embassy initialized!");
+    // res.pps.set_current(0.1).set_voltage(3.3).enable(true);
     loop {
-        let stats: HeapStats = esp_alloc::HEAP.stats();
         info!("mainloop");
-        res.pps.set_current(0.1).set_voltage(3.3).enable(true);
-        info!(
-            "PPS state: mode: {:?}, T: {:?}, Vi: {:?}, Vo: {:?}, Io: {:?}",
-            res.pps.get_running_mode(),
-            res.pps.get_temperature(),
-            res.pps.get_input_voltage(),
-            res.pps.get_voltage(),
-            res.pps.get_current(),
-        );
-
-        println!("{}", stats);
+        // let stats: HeapStats = esp_alloc::HEAP.stats();
+        // println!("{}", stats);
+        // info!(
+        //     "PPS state: mode: {:?}, T: {:?}, Vi: {:?}, Vo: {:?}, Io: {:?}",
+        //     res.pps.get_running_mode(),
+        //     res.pps.get_temperature(),
+        //     res.pps.get_input_voltage(),
+        //     res.pps.get_voltage(),
+        //     res.pps.get_current(),
+        // );
         Timer::after(Duration::from_secs(5)).await;
     }
 }
