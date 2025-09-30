@@ -4,3 +4,6 @@
 [submodule "lvgl_rust_sys"]
 	path = lvgl_rust_sys
 	url = https://github.com/Xila-Project/lvgl_rust_sys.git
+[submodule "victron_ble"]
+	path = victron_ble
+	url = https://github.com/felixwatts/victron_ble.git
