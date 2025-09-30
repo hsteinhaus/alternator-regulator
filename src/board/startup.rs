@@ -1,19 +1,18 @@
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
-    clock::CpuClock, delay::Delay, dma_buffers,
+    clock::CpuClock,
+    delay::Delay,
     dma::{DmaRxBuf, DmaTxBuf},
+    dma_buffers,
     gpio::{Level, Output, OutputConfig},
     i2c::master::{BusTimeout, Config as I2cConfig, I2c},
-    spi::master::{Config as SpiConfig, Spi}, spi::Mode, time::Rate,
+    spi::master::{Config as SpiConfig, Spi},
+    spi::Mode,
+    time::Rate,
     timer::{timg::TimerGroup, AnyTimer},
 };
 
-use crate::board::driver::{
-    display::DisplayDriver,
-    pps::PPSDriver,
-    wifi_ble::WifiDriver,
-};
-
+use crate::board::driver::{display::DisplayDriver, pps::PPSDriver, wifi_ble::WifiDriver};
 
 #[allow(dead_code)]
 pub struct Resources {
@@ -51,12 +50,12 @@ impl Resources {
                 .with_frequency(Rate::from_mhz(40))
                 .with_mode(Mode::_0),
         )
-            .unwrap()
-            .with_sck(sclk)
-            .with_mosi(mosi) // order matters
-            .with_dma(display_dma_channel)
-            .with_buffers(dma_rx_buf, dma_tx_buf)
-            .into_async();
+        .unwrap()
+        .with_sck(sclk)
+        .with_mosi(mosi) // order matters
+        .with_dma(display_dma_channel)
+        .with_buffers(dma_rx_buf, dma_tx_buf)
+        .into_async();
 
         let bl = Output::new(bl, Level::High, OutputConfig::default());
         let cs = Output::new(cs, Level::High, OutputConfig::default());
@@ -64,7 +63,7 @@ impl Resources {
         let rst = Output::new(peripherals.GPIO33, Level::Low, OutputConfig::default());
         let delay = Delay::new();
         let spi_device = ExclusiveDevice::new(spi, cs, delay).unwrap();
-        let d = DisplayDriver::new(spi_device, bl, rst, dc );
+        let d = DisplayDriver::new(spi_device, bl, rst, dc);
 
         ////////////////////////// PPS Module init ////////////////////////////
         let i2c = I2c::new(
@@ -73,10 +72,10 @@ impl Resources {
                 .with_frequency(Rate::from_khz(400))
                 .with_timeout(BusTimeout::Maximum),
         )
-            .unwrap()
-            .with_sda(peripherals.GPIO21)
-            .with_scl(peripherals.GPIO22)
-            .into_async();
+        .unwrap()
+        .with_sda(peripherals.GPIO21)
+        .with_scl(peripherals.GPIO22)
+        .into_async();
         let pps = PPSDriver::new(i2c, 0x35).expect("PPS module init failed");
 
         ////////////////////////// WiFi & BLE init ////////////////////////////
