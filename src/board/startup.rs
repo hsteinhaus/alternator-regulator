@@ -1,4 +1,3 @@
-use crate::board::driver::display::{DisplayDriver};
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::{
     clock::CpuClock, delay::Delay, dma_buffers,
@@ -9,9 +8,18 @@ use esp_hal::{
     timer::{timg::TimerGroup, AnyTimer},
 };
 
+use crate::board::driver::{
+    display::DisplayDriver,
+    pps::PPSDriver,
+    wifi_ble::WifiDriver,
+};
+
+
+#[allow(dead_code)]
 pub struct Resources {
     pub(crate) display: DisplayDriver,
-    pub(crate) wifi_ble: crate::board::driver::wifi_ble::WifiDriver,
+    pub(crate) wifi_ble: WifiDriver,
+    pub(crate) pps: PPSDriver,
 }
 
 impl Resources {
@@ -26,6 +34,7 @@ impl Resources {
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);
 
+        ////////////////////////// Display init ////////////////////////////
         let sclk = peripherals.GPIO18;
         let mosi = peripherals.GPIO23;
         let cs = peripherals.GPIO14;
@@ -57,6 +66,20 @@ impl Resources {
         let spi_device = ExclusiveDevice::new(spi, cs, delay).unwrap();
         let d = DisplayDriver::new(spi_device, bl, rst, dc );
 
+        ////////////////////////// PPS Module init ////////////////////////////
+        let i2c = I2c::new(
+            peripherals.I2C0,
+            I2cConfig::default()
+                .with_frequency(Rate::from_khz(400))
+                .with_timeout(BusTimeout::Maximum),
+        )
+            .unwrap()
+            .with_sda(peripherals.GPIO21)
+            .with_scl(peripherals.GPIO22)
+            .into_async();
+        let pps = PPSDriver::new(i2c, 0x35).expect("PPS module init failed");
+
+        ////////////////////////// WiFi & BLE init ////////////////////////////
         let wifi_driver = crate::board::driver::wifi_ble::WifiDriver::new(
             peripherals.WIFI,
             peripherals.BT,
@@ -67,6 +90,7 @@ impl Resources {
         Self {
             display: d,
             wifi_ble: wifi_driver,
+            pps,
         }
     }
 }

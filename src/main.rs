@@ -28,7 +28,7 @@ mod util;
 
 #[esp_hal_embassy::main]
 async fn main(spawner: Spawner) {
-    let res = startup::Resources::initialize();
+    let mut res = startup::Resources::initialize();
     // Draw a smiley face with white eyes and a red mouth
     //res.display.draw_smiley().unwrap();
 
@@ -43,6 +43,16 @@ async fn main(spawner: Spawner) {
     loop {
         let stats: HeapStats = esp_alloc::HEAP.stats();
         info!("mainloop");
+        res.pps.set_current(0.1).set_voltage(3.3).enable(true);
+        info!(
+            "PPS state: mode: {:?}, T: {:?}, Vi: {:?}, Vo: {:?}, Io: {:?}",
+            res.pps.get_running_mode(),
+            res.pps.get_temperature(),
+            res.pps.get_input_voltage(),
+            res.pps.get_voltage(),
+            res.pps.get_current(),
+        );
+
         println!("{}", stats);
         Timer::after(Duration::from_secs(5)).await;
     }
