@@ -53,6 +53,7 @@ unsafe extern "C" fn flush_cb(disp_drv_p: *mut lv_disp_drv_t, area_p: *const lv_
         warn!("disp_drv_p is null");
     }
     lv_disp_flush_ready(disp_drv_p);
+    debug!("Flush done");
 }
 
 unsafe extern "C" fn my_print(c_str: *const c_char) {
@@ -71,8 +72,8 @@ pub async fn ui_task(display_driver: DisplayDriver) -> ! {
         create_widgets(); // Call the refactored widget creation function
 
         loop {
-            lv_timer_handler();
             lv_tick_inc(LV_DISP_DEF_REFR_PERIOD);
+            lv_timer_handler();
             Timer::after(Duration::from_millis(LV_DISP_DEF_REFR_PERIOD as u64)).await;
         }
     }

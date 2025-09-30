@@ -27,7 +27,7 @@ pub struct DisplayDriver {
 }
 
 impl DisplayDriver {
-    pub fn new(spi_device: DisplaySpiDevice<'static>, mut bl: Output<'static>, mut rst: Output<'static>, mut dc: Output<'static>) -> Self
+    pub fn new(spi_device: DisplaySpiDevice<'static>, mut bl: Output<'static>, mut rst: Output<'static>, dc: Output<'static>) -> Self
     {
         static BUFFER: StaticCell<[u8;128]> = StaticCell::new();
         let buf: &'static mut [u8] = BUFFER.init([0_u8; 128]);
