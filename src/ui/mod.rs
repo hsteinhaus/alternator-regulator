@@ -61,18 +61,20 @@ unsafe extern "C" fn my_print(c_str: *const c_char) {
 }
 
 #[embassy_executor::task]
-pub async unsafe fn ui_task(display_driver: DisplayDriver) {
-    lv_init();
-    lv_log_register_print_cb(Some(my_print)); /* register print function for debugging */
+pub async fn ui_task(display_driver: DisplayDriver) -> ! {
+    unsafe {
+        lv_init();
+        lv_log_register_print_cb(Some(my_print)); /* register print function for debugging */
 
-    lvgl_disp_init(flush_cb, &display_driver as *const DisplayDriver as *mut c_void);
+        lvgl_disp_init(flush_cb, &display_driver as *const DisplayDriver as *mut c_void);
 
-    create_widgets(); // Call the refactored widget creation function
+        create_widgets(); // Call the refactored widget creation function
 
-    loop {
-        lv_timer_handler();
-        Timer::after(Duration::from_millis(LV_DISP_DEF_REFR_PERIOD as u64)).await;
-        lv_tick_inc(LV_DISP_DEF_REFR_PERIOD);
+        loop {
+            lv_timer_handler();
+            lv_tick_inc(LV_DISP_DEF_REFR_PERIOD);
+            Timer::after(Duration::from_millis(LV_DISP_DEF_REFR_PERIOD as u64)).await;
+        }
     }
 }
 
