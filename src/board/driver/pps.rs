@@ -1,4 +1,4 @@
-use defmt::{warn, Format};
+use defmt::{Format};
 use embedded_hal::i2c::{Error as I2cError, ErrorKind as I2cErrorKind};
 use esp_hal::i2c::master::I2c;
 use esp_hal::Async;
@@ -81,13 +81,7 @@ impl ReadCommand {
             ReadCommand::PsuUidW2 => (0x5a, 4),
         };
         let mut buffer = [0_u8; 4];
-        warn!(
-            "Reading from 0x{:x} with cmd 0x{:x} and bytes_to_read {:?}",
-            address, cmd, bytes_to_read
-        );
-        i2c.write_read(address, &[cmd], &mut buffer[..bytes_to_read]).unwrap();
-        warn!("Buffer content: {:x}", buffer);
-
+        i2c.write_read(address, &[cmd], &mut buffer[..bytes_to_read])?;
         match self {
             ReadCommand::ModuleId => Ok(ReadResult::ModuleId((buffer[1] as u16) << 8 | buffer[0] as u16)),
             ReadCommand::GetRunningMode => Ok(ReadResult::RunningMode(
@@ -133,34 +127,33 @@ impl WriteCommand {
     }
 }
 
-pub(crate) struct PPSDriver {
+pub(crate) struct PpsDriver {
     i2c: I2c<'static, Async>,
     address: u8,
 }
 
 #[allow(dead_code)]
-impl PPSDriver {
+impl PpsDriver {
     pub fn new(i2c: I2c<'static, Async>, address: u8) -> Result<Self, Error> {
         Ok(Self { i2c, address })
     }
 
-    pub fn set_current(&mut self, current: f32) -> &mut Self {
+    pub fn set_current(&mut self, current: f32) -> Result<&mut Self, Error> {
         let cmd = WriteCommand::SetCurrent(current);
-        cmd.send(&mut self.i2c, self.address).expect("Failed to set current");
-        self
+        cmd.send(&mut self.i2c, self.address)?;
+        Ok(self)
     }
 
-    pub fn set_voltage(&mut self, voltage: f32) -> &mut Self {
+    pub fn set_voltage(&mut self, voltage: f32) -> Result<&mut Self, Error> {
         let cmd = WriteCommand::SetVoltage(voltage);
-        cmd.send(&mut self.i2c, self.address).expect("Failed to set voltage");
-        self
+        cmd.send(&mut self.i2c, self.address)?;
+        Ok(self)
     }
 
-    pub fn enable(&mut self, enabled: bool) -> &mut Self {
+    pub fn enable(&mut self, enabled: bool) -> Result<&mut Self, Error> {
         let cmd = WriteCommand::ModuleEnable(enabled);
-        cmd.send(&mut self.i2c, self.address)
-            .expect("Failed to enable PPS module");
-        self
+        cmd.send(&mut self.i2c, self.address)?;
+        Ok(self)
     }
 
     pub fn get_running_mode(&mut self) -> Result<RunningMode, Error> {
