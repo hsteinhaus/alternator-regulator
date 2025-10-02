@@ -17,6 +17,7 @@ use crate::board::startup;
 use crate::ui::ui_task;
 use embassy_executor::Spawner;
 use embassy_time::{Duration, Timer};
+use crate::board::driver::analog::adc_task;
 use crate::board::driver::pcnt::{rpm_task, RPM};
 // use esp_alloc::HeapStats;
 // use esp_println::println;
@@ -28,16 +29,15 @@ mod task;
 
 #[esp_hal_embassy::main]
 async fn main(spawner: Spawner) {
-    let mut res = startup::Resources::initialize();
-    // Draw a smiley face with white eyes and a red mouth
-    //res.display.draw_smiley().unwrap();
+    let mut res = startup::Resources::initialize();  // intentionally non-static, compontents are intended to be moved out into the tasks
 
-    // Spawn ble_scan::run in a separate Embassy task
+    // spawn all tasks
     spawner
         .spawn(ble_scan_task(res.wifi_ble.ble_connector))
         .expect("Failed to spawn ble_scan_task");
     spawner.spawn(rpm_task()).expect("Failed to spawn rpm_task");
     spawner.spawn(ui_task(res.display)).expect("Failed to spawn ui_task");
+    spawner.spawn(adc_task(res.adc)).expect("Failed to spawn adc_task");
 
     defmt::info!("Embassy initialized!");
     // res.pps.set_current(0.1).set_voltage(3.3).enable(true);
@@ -53,6 +53,8 @@ async fn main(spawner: Spawner) {
             res.pps.get_voltage(),
             res.pps.get_current(),
         );
+
+
         info!("rpm: {}", RPM.load(core::sync::atomic::Ordering::SeqCst));
         Timer::after(Duration::from_secs(5)).await;
     }

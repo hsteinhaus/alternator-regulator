@@ -12,15 +12,15 @@ use esp_hal::{
     timer::{timg::TimerGroup, AnyTimer},
 };
 use esp_hal::gpio::{Input, InputConfig};
-use esp_hal::pcnt::Pcnt;
-use crate::board::driver::{display::DisplayDriver, pps::PpsDriver, pcnt::PcntDriver, wifi_ble::WifiDriver};
+use crate::board::driver::{display::DisplayDriver, pps::PpsDriver, pcnt::PcntDriver, analog::{AdcDriver, AdcDriverType}, wifi_ble::WifiDriver};
 
 #[allow(dead_code)]
 pub struct Resources {
-    pub(crate) display: DisplayDriver,
-    pub(crate) wifi_ble: WifiDriver,
-    pub(crate) pps: PpsDriver,
-    pub(crate) pcnt: PcntDriver,
+    pub display: DisplayDriver,
+    pub wifi_ble: WifiDriver,
+    pub pps: PpsDriver,
+    pub pcnt: PcntDriver,
+    pub adc: AdcDriverType,
 }
 
 impl Resources {
@@ -84,8 +84,11 @@ impl Resources {
         let rpm_pin = Input::new(peripherals.GPIO5, InputConfig::default().with_pull(esp_hal::gpio::Pull::Down));
         let pcnt = PcntDriver::initialize(peripherals.PCNT, rpm_pin).expect("PCNT module init failed");
 
+        ////////////////////////// ADC init ////////////////////////////
+        let adc = AdcDriver::initialize(peripherals.ADC2, peripherals.GPIO26);
 
-        ////////////////////////// WiFi & BLE init ////////////////////////////
+
+            ////////////////////////// WiFi & BLE init ////////////////////////////
         let wifi_driver = crate::board::driver::wifi_ble::WifiDriver::new(
             peripherals.WIFI,
             peripherals.BT,
@@ -98,6 +101,8 @@ impl Resources {
             wifi_ble: wifi_driver,
             pps,
             pcnt,
+            adc,
         }
     }
 }
+
