@@ -11,18 +11,20 @@ use esp_hal::{
     time::Rate,
     timer::{timg::TimerGroup, AnyTimer},
 };
-
-use crate::board::driver::{display::DisplayDriver, pps::PPSDriver, wifi_ble::WifiDriver};
+use esp_hal::gpio::{Input, InputConfig};
+use esp_hal::pcnt::Pcnt;
+use crate::board::driver::{display::DisplayDriver, pps::PpsDriver, pcnt::PcntDriver, wifi_ble::WifiDriver};
 
 #[allow(dead_code)]
 pub struct Resources {
     pub(crate) display: DisplayDriver,
     pub(crate) wifi_ble: WifiDriver,
-    pub(crate) pps: PPSDriver,
+    pub(crate) pps: PpsDriver,
+    pub(crate) pcnt: PcntDriver,
 }
 
 impl Resources {
-    pub(crate) fn initialize() -> Self {
+    pub fn initialize() -> Self {
         let var_name = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
         let config = var_name;
         let peripherals = esp_hal::init(config);
@@ -76,7 +78,12 @@ impl Resources {
         .with_sda(peripherals.GPIO21)
         .with_scl(peripherals.GPIO22)
         .into_async();
-        let pps = PPSDriver::new(i2c, 0x35).expect("PPS module init failed");
+        let pps = PpsDriver::new(i2c, 0x35).expect("PPS module init failed");
+
+        ////////////////////////// Pulse counter init ////////////////////////////
+        let rpm_pin = Input::new(peripherals.GPIO5, InputConfig::default().with_pull(esp_hal::gpio::Pull::Down));
+        let pcnt = PcntDriver::initialize(peripherals.PCNT, rpm_pin).expect("PCNT module init failed");
+
 
         ////////////////////////// WiFi & BLE init ////////////////////////////
         let wifi_driver = crate::board::driver::wifi_ble::WifiDriver::new(
@@ -90,6 +97,7 @@ impl Resources {
             display: d,
             wifi_ble: wifi_driver,
             pps,
+            pcnt,
         }
     }
 }
