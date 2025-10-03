@@ -19,6 +19,10 @@ static_cell = "2.1.1"
 num-traits = { version="0.2.19", default-features = false }
 num-derive = "0.4.2"
 
+embedded-hal =  { version = "1.0.0", features = ["defmt-03"] }
+embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
+embedded-graphics = { version = "0.8.1", features = ["defmt"] }
+
 esp-alloc = { version = "0.8.0", features = ["defmt", "internal-heap-stats"] }
 esp-backtrace = { version = "0.17.0", features = ["esp32", "exception-handler", "panic-handler", "defmt"] }
 esp-println = { version = "0.15.0", features = ["esp32", "defmt-espflash", "timestamp"] }
@@ -67,13 +71,10 @@ smoltcp = { version = "0.12.0", default-features = false, features = [
 trouble-host = { version="0.2.4", features = ["gatt", "scan", "defmt"] }
 bt-hci = { version = "0.3.2" }
 victron_ble = { path="victron_ble", default-features = false }
-
-embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
-embedded-graphics = { version = "0.8.1", features = ["defmt"] }
 mipidsi = "0.9.0"
-embedded-hal = "1.0.0"
 lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
 nb = "1.1.0"
+
 
 [build-dependencies]
 cmake = "0.1"
@@ -92,3 +93,12 @@ incremental = false
 lto = 'fat'
 opt-level = 's'
 overflow-checks = false
+
+
+[patch.crates-io]
+#esp-wifi = {git = "https://github.com/esp-rs/esp-hal.git", rev = "56be259c41305f24276852d2af4fce16247107bd"}
+#esp-backtrace = {git = "https://github.com/esp-rs/esp-hal.git", rev = "56be259c41305f24276852d2af4fce16247107bd"}
+#esp-hal = {path="esp-hal/esp-hal"}
+#esp-hal-embassy = {git = "https://github.com/esp-rs/esp-hal.git", rev = "56be259c41305f24276852d2af4fce16247107bd"}
+#esp-alloc = {git = "https://github.com/esp-rs/esp-hal.git", rev = "56be259c41305f24276852d2af4fce16247107bd"}
+#esp-println = {git = "https://github.com/esp-rs/esp-hal.git", rev = "56be259c41305f24276852d2af4fce16247107bd"}
