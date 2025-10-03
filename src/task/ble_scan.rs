@@ -9,7 +9,8 @@ use trouble_host::prelude::*;
 /// Max number of connections
 const CONNECTIONS_MAX: usize = 3;
 const L2CAP_CHANNELS_MAX: usize = 3;
-const BT_SCAN_INTERVAL: u64 = 50;
+const BT_SCAN_INTERVAL: u64 = 500;
+const BT_SCAN_WINDOW: u64 = 400;
 
 const VICTRON_ID: u16 = 0x02e1;
 // SmartShunt 500A (Sprinter)
@@ -49,7 +50,7 @@ where
         config.active = false;
         //config.phys = PhySet::M1;
         config.interval = Duration::from_millis(BT_SCAN_INTERVAL);
-        config.window = Duration::from_millis(BT_SCAN_INTERVAL-10);
+        config.window = Duration::from_millis(BT_SCAN_WINDOW);
         config.filter_accept_list = &filter;
 
         // Scan forever
