@@ -7,3 +7,6 @@
 [submodule "victron_ble"]
 	path = victron_ble
 	url = https://github.com/felixwatts/victron_ble.git
+[submodule "esp-hal"]
+	path = esp-hal
+	url = https://github.com/esp-rs/esp-hal.git
