@@ -23,6 +23,8 @@ use esp_hal::{
 
 #[allow(dead_code)]
 pub struct Resources {
+    pub led0: Output<'static>,
+    pub led1: Output<'static>,
     pub display: DisplayDriver,
     pub wifi_ble: WifiDriver,
     pub pps: PpsDriver,
@@ -42,6 +44,11 @@ impl Resources {
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);
+
+
+        /////////////////////////// GPIO init ////////////////////////////
+        let led0 = Output::new(peripherals.GPIO12, Level::Low, OutputConfig::default());
+        let led1 = Output::new(peripherals.GPIO15, Level::Low, OutputConfig::default());
 
         ////////////////////////// Display init ////////////////////////////
         let sclk = peripherals.GPIO18;
@@ -107,6 +114,8 @@ impl Resources {
         );
 
         Self {
+            led0,
+            led1,
             display: d,
             wifi_ble: wifi_driver,
             pps,
