@@ -1,4 +1,13 @@
+use crate::board::driver::{
+    analog::{AdcDriver, AdcDriverType},
+    display::DisplayDriver,
+    pcnt::PcntDriver,
+    pps::PpsDriver,
+    wifi_ble::WifiDriver,
+};
 use embedded_hal_bus::spi::ExclusiveDevice;
+use esp_hal::gpio::{Input, InputConfig};
+use esp_hal::system::CpuControl;
 use esp_hal::{
     clock::CpuClock,
     delay::Delay,
@@ -11,8 +20,6 @@ use esp_hal::{
     time::Rate,
     timer::{timg::TimerGroup, AnyTimer},
 };
-use esp_hal::gpio::{Input, InputConfig};
-use crate::board::driver::{display::DisplayDriver, pps::PpsDriver, pcnt::PcntDriver, analog::{AdcDriver, AdcDriverType}, wifi_ble::WifiDriver};
 
 #[allow(dead_code)]
 pub struct Resources {
@@ -21,6 +28,7 @@ pub struct Resources {
     pub pps: PpsDriver,
     pub pcnt: PcntDriver,
     pub adc: AdcDriverType,
+    pub cpu_control: CpuControl<'static>,
 }
 
 impl Resources {
@@ -29,8 +37,8 @@ impl Resources {
         let config = var_name;
         let peripherals = esp_hal::init(config);
 
-        // esp_alloc::heap_allocator!(size: 12 * 1024);  // 11kB is max for the heap, otherwise "cannot move location counter backwards"
-        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 90000); // COEX needs more RAM - so we've added some more
+        //esp_alloc::heap_allocator!(size: 4 * 1024);  // 4kB is max for the heap, otherwise "cannot move location counter backwards"
+        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 98767); // for WiFi/BLE, even if the rest of the app is statically allocated
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);
@@ -81,14 +89,16 @@ impl Resources {
         let pps = PpsDriver::new(i2c, 0x35).expect("PPS module init failed");
 
         ////////////////////////// Pulse counter init ////////////////////////////
-        let rpm_pin = Input::new(peripherals.GPIO5, InputConfig::default().with_pull(esp_hal::gpio::Pull::Down));
+        let rpm_pin = Input::new(
+            peripherals.GPIO5,
+            InputConfig::default().with_pull(esp_hal::gpio::Pull::Down),
+        );
         let pcnt = PcntDriver::initialize(peripherals.PCNT, rpm_pin).expect("PCNT module init failed");
 
         ////////////////////////// ADC init ////////////////////////////
         let adc = AdcDriver::initialize(peripherals.ADC2, peripherals.GPIO26);
 
-
-            ////////////////////////// WiFi & BLE init ////////////////////////////
+        ////////////////////////// WiFi & BLE init ////////////////////////////
         let wifi_driver = crate::board::driver::wifi_ble::WifiDriver::new(
             peripherals.WIFI,
             peripherals.BT,
@@ -102,7 +112,7 @@ impl Resources {
             pps,
             pcnt,
             adc,
+            cpu_control: CpuControl::new(peripherals.CPU_CTRL),
         }
     }
 }
-
