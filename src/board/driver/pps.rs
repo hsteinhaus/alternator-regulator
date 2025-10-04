@@ -2,7 +2,7 @@ use defmt::{Format};
 use embedded_hal::i2c::{Error as I2cError, ErrorKind as I2cErrorKind};
 use esp_hal::i2c::master::I2c;
 use esp_hal::Async;
-use num_derive::FromPrimitive;
+use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
 #[allow(dead_code)]
@@ -49,7 +49,7 @@ enum ReadCommand {
 }
 
 #[repr(u8)]
-#[derive(FromPrimitive, Format, Debug)]
+#[derive(FromPrimitive, ToPrimitive, Format, Debug)]
 pub enum RunningMode {
     Off = 0,
     Voltage = 1,

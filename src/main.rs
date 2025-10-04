@@ -9,7 +9,8 @@
 extern crate alloc;
 
 use core::ptr::addr_of_mut;
-use defmt::{error, info, };
+use core::sync::atomic::Ordering;
+use defmt::{error, info};
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::StaticCell;
@@ -24,17 +25,16 @@ use esp_hal_embassy::{Callbacks, Executor};
 
 use board::startup;
 
-use acq::{
+use io::{
     ble_scan::ble_scan_task,
-    rpm_task,
-    pps_task,
 };
 
 use ui::ui_task;
+use crate::io::{io_task, SETPOINT};
 
 #[allow(dead_code)]
 mod board;
-mod acq;
+mod io;
 mod ui;
 mod util;
 mod control;
@@ -65,10 +65,6 @@ fn main() -> ! {
     info!("Embassy initialized!");
 
     // start APP core executor first, as running the PRO core executor will block
-    let app_callbacks = CpuLoadHooks {
-        core_id: 1,
-        led_pin: res.led1,
-    };
     let _guard = res
         .cpu_control
         .start_app_core(unsafe { &mut *addr_of_mut!(APP_CORE_STACK) }, move || {
@@ -77,17 +73,15 @@ fn main() -> ! {
             executor_app.run_with_callbacks(
                 |spawner_app| {
                     spawner_app.spawn(app_main()).ok();
-                    spawner_app.spawn(rpm_task(res.pcnt)).expect("Failed to spawn rpm_task");
-                },app_callbacks,
+                },CpuLoadHooks {
+                    core_id: 1,
+                    led_pin: res.led1,
+                },
             );
         })
         .unwrap();
 
     // start PRO core executor
-    let pro_callbacks = CpuLoadHooks {
-        core_id: 0,
-        led_pin: res.led0,
-    };
     static EXECUTOR_PRO: StaticCell<::esp_hal_embassy::Executor> = StaticCell::new();
     let executor_pro = EXECUTOR_PRO.init(::esp_hal_embassy::Executor::new());
     executor_pro.run_with_callbacks(
@@ -95,19 +89,28 @@ fn main() -> ! {
             spawner_pro
                 .spawn(ble_scan_task(res.wifi_ble.ble_connector))
                 .expect("Failed to spawn ble_scan_task");
-            spawner_pro.spawn(pps_task(res.pps)).expect("Failed to spawn pps_task");
             spawner_pro
                 .spawn(ui_task(res.display))
                 .expect("Failed to spawn ui_task");
 //            spawner_pro.spawn(adc_task(res.adc)).expect("Failed to spawn adc_task");
+            spawner_pro.spawn(io_task(res.adc, res.pcnt, res.pps)).expect("Failed to spawn io_task");
             spawner_pro.spawn(pro_main()).expect("Failed to spawn pro_main");
-        }, pro_callbacks,
+        }, CpuLoadHooks {
+            core_id: 0,
+            led_pin: res.led0,
+        },
     );
 }
 
 #[embassy_executor::task]
 async fn app_main() -> ! {
     error!("Starting app_main");
+    Timer::after(Duration::from_millis(5000)).await;
+
+    SETPOINT.field_current_limit.store(2.0 , Ordering::SeqCst);
+    SETPOINT.field_voltage_limit.store(20.0 , Ordering::SeqCst);
+    SETPOINT.pps_enabled.store(true , Ordering::SeqCst);
+
     loop {
         info!("Hello from core {}", Cpu::current() as usize);
         Timer::after(Duration::from_millis(100)).await;
