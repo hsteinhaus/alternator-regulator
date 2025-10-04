@@ -62,7 +62,7 @@ unsafe extern "C" fn my_print(c_str: *const c_char) {
 }
 
 #[embassy_executor::task]
-pub async fn ui_task(display_driver: DisplayDriver) -> ! {
+pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
     unsafe {
         lv_init();
         lv_log_register_print_cb(Some(my_print)); /* register print function for debugging */
@@ -70,7 +70,8 @@ pub async fn ui_task(display_driver: DisplayDriver) -> ! {
         lvgl_disp_init(flush_cb, &display_driver as *const DisplayDriver as *mut c_void);
 
         create_widgets(); // Call the refactored widget creation function
-
+        lv_timer_handler(); // first rendering takes a long time, so do it once befor turing on the backlight
+        display_driver.bl_on();
         loop {
             lv_tick_inc(LV_DISP_DEF_REFR_PERIOD);
             lv_timer_handler();

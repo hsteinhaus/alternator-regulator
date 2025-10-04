@@ -27,12 +27,23 @@ pub struct DisplayDriver {
 }
 
 impl DisplayDriver {
+    pub fn bl_on(&mut self) {
+        self.bl_pin.set_high();
+    }
+
+    pub fn bl_off(&mut self) {
+        self.bl_pin.set_low();
+    }
+}
+
+impl DisplayDriver {
     pub fn new(spi_device: DisplaySpiDevice<'static>, mut bl: Output<'static>, mut rst: Output<'static>, dc: Output<'static>) -> Self
     {
         static BUFFER: StaticCell<[u8;128]> = StaticCell::new();
         let buf: &'static mut [u8] = BUFFER.init([0_u8; 128]);
         let di = SpiInterface::new(spi_device, dc, buf);
 
+        bl.set_low();      // avaoid flickering
         rst.set_high();
         let mut delay = Delay::new();
         static DISPLAY: StaticCell<D> = StaticCell::new();
@@ -46,8 +57,6 @@ impl DisplayDriver {
                 .unwrap()
         );
         display.clear(Rgb565::BLACK).unwrap();
-        bl.set_high();
-
         Self { bl_pin: bl, display }
     }
 
