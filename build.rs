@@ -1,5 +1,4 @@
 use cc::Build;
-use cmake;
 use cmake::Config;
 use std::env;
 use std::path::{Path, PathBuf};

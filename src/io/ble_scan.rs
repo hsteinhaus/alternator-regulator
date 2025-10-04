@@ -99,7 +99,7 @@ impl EventHandler for VictronBLE {
                 continue;
             };
             for ad in AdStructure::decode(report.data) {
-                let _ad = match ad {
+                match ad {
                     Ok(ad) => {
                         match ad {
                             AdStructure::ManufacturerSpecificData {company_identifier, payload}  => {

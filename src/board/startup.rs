@@ -56,6 +56,7 @@ impl Resources {
         let cs = peripherals.GPIO14;
         let bl = peripherals.GPIO32;
 
+        #[allow(clippy::manual_div_ceil)]
         let (rx_buffer, rx_descriptors, tx_buffer, tx_descriptors) = dma_buffers!(4092);
         let display_dma_channel = peripherals.DMA_SPI2;
         let dma_tx_buf = DmaTxBuf::new(tx_descriptors, tx_buffer).unwrap();
