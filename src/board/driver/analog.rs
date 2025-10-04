@@ -1,6 +1,6 @@
 use embassy_time::{Duration, Timer};
-use esp_hal::analog::adc::{Adc, AdcPin, AdcConfig, Attenuation, AdcChannel, RegisterAccess};
-use esp_hal::{Blocking, peripherals};
+use esp_hal::analog::adc::{Adc, AdcChannel, AdcConfig, AdcPin, Attenuation, RegisterAccess};
+use esp_hal::{peripherals, Blocking};
 use esp_hal::gpio::AnalogPin;
 
 pub type AdcDriverType = AdcDriver<'static, peripherals::ADC2<'static>, peripherals::GPIO26<'static>>;
@@ -40,11 +40,3 @@ where
 }
 
 
-#[embassy_executor::task]
-pub async fn adc_task(mut adc: AdcDriverType) -> ! {
-    loop {
-        let r = adc.read_oneshot().await;
-        defmt::info!("adc: {}", r);
-        Timer::after(Duration::from_millis(4900)).await;
-    }
-}

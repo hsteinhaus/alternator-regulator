@@ -1,20 +1,22 @@
-use core::cell::RefCell;
 use core::fmt::Display;
-use core::sync::atomic::{AtomicI32, Ordering};
-use embassy_time::{Duration, Timer};
 use esp_hal::{
     gpio::Input,
-    pcnt::{channel, unit, Pcnt},
+    pcnt::{channel, Pcnt, unit},
     peripherals::PCNT,
-    xtensa_lx::_export::critical_section,
 };
 
-static UNIT0: critical_section::Mutex<RefCell<Option<unit::Unit<'static, 1>>>> =
-    critical_section::Mutex::new(RefCell::new(None));
 
-pub static RPM: AtomicI32 = AtomicI32::new(0);
+pub struct PcntDriver {
+    pub pcnt_unit: unit::Unit<'static, 1>
+}
 
-pub struct PcntDriver {}
+impl PcntDriver {
+    pub fn get_and_reset(&mut self) -> i16 {
+        let c = self.pcnt_unit.counter.get();
+        self.pcnt_unit.clear();
+        c
+    }
+}
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -48,35 +50,7 @@ impl PcntDriver {
         // Enable interrupts and resume pulse counter unit
         u0.listen();
         u0.resume();
-
-        critical_section::with(|cs| UNIT0.borrow_ref_mut(cs).replace(u0));
-        Ok(Self {})
+        Ok(Self {pcnt_unit: u0})
     }
 }
 
-#[embassy_executor::task]
-pub async fn rpm_task() -> ! {
-    const POLE_PAIRS: f32 = 6.;
-    const LOOP_DELAY_MS: u64 = 100;
-    const PULLEY_RATIO: f32 = 53.7 / 128.2;
-
-    loop {
-        let mut c = 0;
-        critical_section::with(|cs| {
-            let mut u0 = UNIT0.borrow_ref_mut(cs);
-            if let Some(u0) = u0.as_mut() {
-                c = u0.counter.get();
-                u0.clear();
-            }
-        });
-
-        let rpm = c as f32
-            * 60.                            // Hz -> rpm
-            * (1./POLE_PAIRS/2.)            // 6 pole pairs, 2 imp per rev
-            * (1000./LOOP_DELAY_MS as f32)   // interval
-            * PULLEY_RATIO; // belt ratio
-        RPM.store(rpm as i32, Ordering::SeqCst);
-        // info!("RPM: {}", rpm);
-        Timer::after(Duration::from_millis(LOOP_DELAY_MS)).await;
-    }
-}
