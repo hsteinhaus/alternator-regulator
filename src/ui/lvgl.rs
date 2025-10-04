@@ -1,5 +1,8 @@
-use alloc::{ffi::CString, format};
+/// Unfortunately, the official lvgl-rs crate is a big mess ATM.
+/// This unsafe and probably also unsound hack is at least working...
+
 use core::ffi::c_char;
+use heapless::{format, String, CString};
 use lvgl_rust_sys::*;
 
 #[allow(unused)]
@@ -121,7 +124,7 @@ impl Meter {
         unsafe {
             lv_meter_set_indicator_value(self.handle, self.needle, value as i32);
         }
-        let s = format!("{:.1}", value);
+        let s: String<10> = format!("{:.1}", value).expect("format failed");
         self.current_label.text(s.as_str());
     }
 }
@@ -145,7 +148,7 @@ impl Label {
 
     /// Sets the text of the label.
     pub fn text(&self, text: &str) -> &Self {
-        let c_str = CString::new(text).unwrap();
+        let c_str = CString::<20>::from_bytes_with_nul(text.as_bytes()).expect("does not fit into buffer");
         let c_ptr = c_str.as_ptr() as *mut c_char;
         unsafe { lv_label_set_text(self.handle, c_ptr) };
         self
