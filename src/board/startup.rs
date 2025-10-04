@@ -20,11 +20,13 @@ use esp_hal::{
     time::Rate,
     timer::{timg::TimerGroup, AnyTimer},
 };
+use esp_hal::rng::Rng;
 
 #[allow(dead_code)]
 pub struct Resources {
     pub led0: Output<'static>,
     pub led1: Output<'static>,
+    pub rng: Rng,
     pub display: DisplayDriver,
     pub wifi_ble: WifiDriver,
     pub pps: PpsDriver,
@@ -49,6 +51,7 @@ impl Resources {
         /////////////////////////// GPIO init ////////////////////////////
         let led0 = Output::new(peripherals.GPIO12, Level::Low, OutputConfig::default());
         let led1 = Output::new(peripherals.GPIO15, Level::Low, OutputConfig::default());
+        let rng = Rng::new(peripherals.RNG);
 
         ////////////////////////// Display init ////////////////////////////
         let sclk = peripherals.GPIO18;
@@ -111,10 +114,11 @@ impl Resources {
             peripherals.WIFI,
             peripherals.BT,
             AnyTimer::from(TimerGroup::new(peripherals.TIMG0).timer0),
-            peripherals.RNG,
+            rng.clone(),
         );
 
         Self {
+            rng,
             led0,
             led1,
             display: d,

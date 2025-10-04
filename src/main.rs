@@ -21,6 +21,7 @@ use esp_hal::{
     main,
     system::{Cpu, Stack},
 };
+use esp_hal::rng::Rng;
 use esp_hal_embassy::{Callbacks, Executor};
 
 use board::startup;
@@ -72,7 +73,7 @@ fn main() -> ! {
             let executor_app = EXECUTOR_APP.init(Executor::new());
             executor_app.run_with_callbacks(
                 |spawner_app| {
-                    spawner_app.spawn(app_main()).ok();
+                    spawner_app.spawn(app_main(res.rng)).ok();
                 },CpuLoadHooks {
                     core_id: 1,
                     led_pin: res.led1,
@@ -103,16 +104,15 @@ fn main() -> ! {
 }
 
 #[embassy_executor::task]
-async fn app_main() -> ! {
+async fn app_main(mut rng: Rng) -> ! {
     error!("Starting app_main");
     Timer::after(Duration::from_millis(5000)).await;
 
-    SETPOINT.field_current_limit.store(2.0 , Ordering::SeqCst);
-    SETPOINT.field_voltage_limit.store(20.0 , Ordering::SeqCst);
-    SETPOINT.pps_enabled.store(true , Ordering::SeqCst);
-
     loop {
         info!("Hello from core {}", Cpu::current() as usize);
+        SETPOINT.field_current_limit.store(rng.random() as f32/u32::MAX as f32 * 2. , Ordering::SeqCst);
+        SETPOINT.field_voltage_limit.store(rng.random() as f32/u32::MAX as f32 * 20. , Ordering::SeqCst);
+        SETPOINT.pps_enabled.store(true , Ordering::SeqCst);
         Timer::after(Duration::from_millis(100)).await;
     }
 }
