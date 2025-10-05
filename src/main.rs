@@ -15,11 +15,11 @@ use esp_backtrace as _;
 use esp_println as _;
 use static_cell::StaticCell;
 
-use embassy_time::{Duration, Timer};
+use embassy_time::{Duration, Ticker, Timer};
 use esp_hal::{
     gpio::Output,
     main,
-    system::{Cpu, Stack},
+    system::{Stack},
 };
 use esp_hal::rng::Rng;
 use esp_hal_embassy::{Callbacks, Executor};
@@ -31,6 +31,7 @@ use io::{
 };
 
 use ui::ui_task;
+use crate::board::driver::pps::SetMode;
 use crate::io::{io_task, SETPOINT};
 
 #[allow(dead_code)]
@@ -106,14 +107,14 @@ fn main() -> ! {
 #[embassy_executor::task]
 async fn app_main(mut rng: Rng) -> ! {
     error!("Starting app_main");
-    Timer::after(Duration::from_millis(5000)).await;
+    Timer::after(Duration::from_millis(5050)).await;
 
+    let mut ticker = Ticker::every(Duration::from_millis(1000));
     loop {
-        info!("Hello from core {}", Cpu::current() as usize);
         SETPOINT.field_current_limit.store(rng.random() as f32/u32::MAX as f32 * 2. , Ordering::SeqCst);
         SETPOINT.field_voltage_limit.store(rng.random() as f32/u32::MAX as f32 * 20. , Ordering::SeqCst);
-        SETPOINT.pps_enabled.store(true , Ordering::SeqCst);
-        Timer::after(Duration::from_millis(100)).await;
+        SETPOINT.pps_enabled.store(SetMode::On as u8 , Ordering::SeqCst);
+        ticker.next().await;
     }
 }
 
@@ -122,7 +123,6 @@ async fn app_main(mut rng: Rng) -> ! {
 async fn pro_main() -> () {
     // res.pps.set_current(0.1).set_voltage(3.3).enable(true);
     loop {
-        info!("Hello from core {}", Cpu::current() as usize);
         // let stats: HeapStats = esp_alloc::HEAP.stats();
         // println!("{}", stats);
         Timer::after(Duration::from_millis(100)).await;

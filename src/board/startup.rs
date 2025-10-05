@@ -114,7 +114,7 @@ impl Resources {
             peripherals.WIFI,
             peripherals.BT,
             AnyTimer::from(TimerGroup::new(peripherals.TIMG0).timer0),
-            rng.clone(),
+            rng,
         );
 
         Self {
