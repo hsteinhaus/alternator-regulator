@@ -49,12 +49,25 @@ enum ReadCommand {
 }
 
 #[repr(u8)]
-#[derive(FromPrimitive, ToPrimitive, Format, Debug)]
+#[derive(FromPrimitive, ToPrimitive, Format, Debug, Default)]
 pub enum RunningMode {
     Off = 0,
     Voltage = 1,
     Current = 2,
+    #[default]
+    Unknown = 3,
 }
+
+#[repr(u8)]
+#[derive(FromPrimitive, ToPrimitive, Format, Debug, Default)]
+pub enum SetMode {
+    Off = 0,
+    On = 1,
+    #[default]
+    DontTouch = 2,
+}
+
+
 
 pub enum ReadResult {
     ModuleId(u16),

@@ -91,7 +91,7 @@ impl Resources {
             peripherals.I2C0,
             I2cConfig::default()
                 .with_frequency(Rate::from_khz(400))
-                .with_timeout(BusTimeout::Maximum),
+                .with_timeout(BusTimeout::BusCycles(20)),
         )
         .unwrap()
         .with_sda(peripherals.GPIO21)
