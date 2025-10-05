@@ -40,8 +40,8 @@ impl DisplayDriver {
     pub fn new(spi_device: DisplaySpiDevice<'static>, mut bl: Output<'static>, mut rst: Output<'static>, dc: Output<'static>) -> Self
     {
         static BUFFER: StaticCell<[u8;128]> = StaticCell::new();
-        let buf: &'static mut [u8] = BUFFER.init([0_u8; 128]);
-        let di = SpiInterface::new(spi_device, dc, buf);
+        let di_buf: &'static mut [u8] = BUFFER.init([0_u8; 128]);
+        let di = SpiInterface::new(spi_device, dc, di_buf);
 
         bl.set_low();      // avaoid flickering
         rst.set_high();

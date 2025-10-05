@@ -1,5 +1,5 @@
-/// Unfortunately, the official lvgl-rs crate is a big mess ATM.
-/// This unsafe and probably also unsound hack is at least working...
+// Unfortunately, the official lvgl-rs crate is a big mess ATM.
+// This unsafe and probably also unsound hack is at least working...
 
 use core::ffi::c_char;
 use heapless::{format, String, CString};
