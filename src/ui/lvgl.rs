@@ -2,8 +2,25 @@
 // This unsafe and probably also unsound hack is at least working...
 
 use core::ffi::c_char;
+use defmt::Format;
 use heapless::{format, String, CString};
 use lvgl_rust_sys::*;
+use thiserror_no_std::Error;
+
+#[derive(Error, Debug)]
+pub enum Error {
+    #[error("unable to format value")]
+    FormatError(#[from]core::fmt::Error),
+}
+
+impl Format for Error {
+    fn format(&self, f: defmt::Formatter) {
+        match self {
+            Error::FormatError(_) => defmt::write!(f, "FormatError"),
+        }
+    }
+}
+
 
 #[allow(unused)]
 pub trait Widget {
@@ -40,8 +57,11 @@ pub trait Widget {
         unsafe { lv_obj_set_height(self.get_handle(), height as lv_coord_t) };
         self
     }
+
+    fn set_value(&mut self, value: f32) -> Result<(), Error>;
 }
 
+#[derive(Debug, Default)]
 pub struct Meter {
     handle: *mut lv_obj_t,
     needle: *mut lv_meter_indicator_t,
@@ -51,6 +71,16 @@ pub struct Meter {
 impl Widget for Meter {
     fn get_handle(&self) -> *mut lv_obj_t {
         self.handle
+    }
+
+    fn set_value(&mut self, value: f32) -> Result<(), Error>
+    {
+        unsafe {
+            lv_meter_set_indicator_value(self.handle, self.needle, value as i32);
+        }
+        let s: String<10> = format!("{:.1}", value)?;
+        self.current_label.text(s.as_str());
+        Ok(())
     }
 }
 
@@ -119,16 +149,9 @@ impl Meter {
             }
         }
     }
-
-    pub fn set_value(&self, value: f32) {
-        unsafe {
-            lv_meter_set_indicator_value(self.handle, self.needle, value as i32);
-        }
-        let s: String<10> = format!("{:.1}", value).expect("format failed");
-        self.current_label.text(s.as_str());
-    }
 }
 
+#[derive(Debug, Default)]
 pub struct Label {
     handle: *mut lv_obj_t,
 }
@@ -136,6 +159,12 @@ pub struct Label {
 impl Widget for Label {
     fn get_handle(&self) -> *mut lv_obj_t {
         self.handle
+    }
+
+    fn set_value(&mut self, value: f32) -> Result<(), Error> {
+        let s: String<10> = format!("{:.1}", value)?;
+        self.text(s.as_str());
+        Ok(())
     }
 }
 
@@ -167,6 +196,7 @@ impl Label {
     }
 }
 
+#[derive(Debug, Default)]
 pub struct Bar {
     handle: *mut lv_obj_t,
 }
@@ -174,6 +204,13 @@ pub struct Bar {
 impl Widget for Bar {
     fn get_handle(&self) -> *mut lv_obj_t {
         self.handle
+    }
+
+    fn set_value(&mut self, value: f32) -> Result<(), Error> {
+        unsafe {
+            lv_bar_set_value(self.handle, (value*10.) as i32, lv_anim_enable_t_LV_ANIM_ON);
+        }
+        Ok(())
     }
 }
 
@@ -193,8 +230,8 @@ impl Bar {
         self
     }
 
-    pub fn range(self, from: i32, to: i32) -> Self {
-        unsafe { lv_bar_set_range(self.handle, from, to) };
+    pub fn range(self, from: f32, to: f32) -> Self {
+        unsafe { lv_bar_set_range(self.handle, (from*10.) as i32, (to*10.) as i32) };
         self
     }
 
@@ -204,4 +241,5 @@ impl Bar {
         };
         self
     }
+
 }
