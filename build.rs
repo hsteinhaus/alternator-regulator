@@ -1,7 +1,5 @@
 use cc::Build;
 use cmake::Config;
-use std::env;
-use std::path::{Path, PathBuf};
 
 fn main() {
     linker_be_nice();
@@ -13,14 +11,10 @@ fn main() {
 }
 
 fn compile_lvgl_inline_wrappers() {
-    let project_dir = canonicalize(PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap()));
-    let x = project_dir.join("src").join("ui").join("lvgl_buffers.c");
-
     let mut cfg = Build::new();
     cfg.compiler("xtensa-esp32-elf-gcc")
         .include("./lvgl_rust_sys/lvgl")
         .file("/tmp/bindgen/extern.c")
-        .file(x)
         .compile("lvgl-inline-wrappers");
     println!(
         "cargo:info=Building for target {:?} using compiler {:?}",
@@ -86,11 +80,4 @@ fn linker_be_nice() {
         "cargo:rustc-link-arg=-Wl,--error-handling-script={}",
         std::env::current_exe().unwrap().display()
     );
-}
-
-fn canonicalize(path: impl AsRef<Path>) -> PathBuf {
-    let canonicalized = path.as_ref().canonicalize().unwrap();
-    let canonicalized = &*canonicalized.to_string_lossy();
-
-    PathBuf::from(canonicalized.strip_prefix(r"\\?\").unwrap_or(canonicalized))
 }

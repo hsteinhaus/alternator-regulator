@@ -208,7 +208,7 @@ impl Widget for Bar {
 
     fn set_value(&mut self, value: f32) -> Result<(), Error> {
         unsafe {
-            lv_bar_set_value(self.handle, (value*10.) as i32, lv_anim_enable_t_LV_ANIM_ON);
+            lv_bar_set_value(self.handle, (value*10.) as i32, lv_anim_enable_t_LV_ANIM_OFF);
         }
         Ok(())
     }
