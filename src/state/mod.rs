@@ -1,11 +1,8 @@
 use async_button::{Button, ButtonEvent as AsyncButtonEvent};
-use defmt::{info, Format};
+use defmt::{warn, Format};
 use embassy_futures::select::{select3, Either3};
-use embassy_time::{Duration, Ticker};
 use esp_hal::gpio::Input;
-use esp_hal::xtensa_lx::_export::critical_section::Mutex;
 
-const BUTTON_LOOP_TIME_MS: u64 = 10;
 
 #[derive(Debug, Format)]
 enum ButtonEvent {
@@ -22,7 +19,6 @@ enum ButtonEvent {
 
 #[embassy_executor::task]
 pub async fn button_task(mut button_left: Button<Input<'static>>, mut button_center: Button<Input<'static>>, mut button_right: Button<Input<'static>>) -> !{
-    let mut ticker = Ticker::every(Duration::from_millis(BUTTON_LOOP_TIME_MS));
     loop {
         // decode button events
         let button_event = match select3(button_left.update(), button_center.update(), button_right.update()).await {
@@ -46,9 +42,9 @@ pub async fn button_task(mut button_left: Button<Input<'static>>, mut button_cen
                 }
             }
         };
-        info!("button_event: {:?}", button_event);
+        warn!("button_event: {:?}", button_event);
 //        BUTTON_EVENT.get_mut().replace(button_event);
-        ticker.next().await;
+        // intentionally no timer/ticker here, loop is inhibited by polling the update() method of the buttons
     }
 }
 

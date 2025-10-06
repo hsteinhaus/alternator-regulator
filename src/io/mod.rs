@@ -14,8 +14,7 @@ pub mod ble_scan;
 pub struct ProcessData {
     pub rpm: AtomicF32,
     pub temperature: AtomicF32,
-    pub voltage: AtomicF32,
-    pub current: AtomicF32,
+    pub bat_current: AtomicF32,
     pub bat_voltage: AtomicF32,
     pub field_voltage: AtomicF32,
     pub field_current: AtomicF32,
@@ -28,8 +27,7 @@ pub struct ProcessData {
 pub static PROCESS_DATA: ProcessData = ProcessData {
     rpm: AtomicF32::new(f32::NAN),
     temperature: AtomicF32::new(f32::NAN),
-    voltage: AtomicF32::new(f32::NAN),
-    current: AtomicF32::new(f32::NAN),
+    bat_current: AtomicF32::new(f32::NAN),
     bat_voltage: AtomicF32::new(f32::NAN),
     field_voltage: AtomicF32::new(f32::NAN),
     field_current: AtomicF32::new(f32::NAN),
@@ -54,38 +52,7 @@ pub static SETPOINT: Setpoint = Setpoint {
     contactor_state: AtomicBool::new(false),
 };
 
-
 const IO_LOOP_TIME_MS: u64 = 100;
-
-#[embassy_executor::task]
-pub async fn io_task(mut adc: AdcDriverType, mut pcnt_driver: PcntDriver, mut pps: PpsDriver) -> ! {
-    // owned here forever
-    let _adc = &mut adc;
-    let pcnt_driver = &mut pcnt_driver;
-    let pps = &mut pps;
-    let mut ticker = Ticker::every(Duration::from_millis(IO_LOOP_TIME_MS));
-    loop {
-        let loop_start = Instant::now();
-        trace!("process_data: {:?}", Debug2Format(&PROCESS_DATA));
-        trace!("setpoint: {:?}", Debug2Format(&SETPOINT));
-        with_timeout(Duration::from_millis(200), async {
-            write_pps(pps)
-                .await
-                .unwrap_or_else(|e| warn!("PPS write error: {:?}", e));
-            read_rpm(pcnt_driver).await;
-            read_rpm(pcnt_driver).await;
-            read_pps(pps).await;
-        })
-        .await
-        .unwrap_or_else(|_| {
-            error!("timeout in io loop");
-            ticker.reset_at(Instant::now() - Duration::from_millis(IO_LOOP_TIME_MS));
-        });
-        let loop_time = loop_start.elapsed();
-        debug!("io loop time: {:?} ms", loop_time.as_millis());
-        ticker.next().await;
-    }
-}
 
 #[allow(dead_code)]
 pub async fn read_adc(adc: &mut AdcDriverType) {
@@ -142,4 +109,49 @@ pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
         SetMode::DontTouch => (),
     };
     Ok(())
+}
+
+#[embassy_executor::task]
+pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
+    // owned here forever
+    let _adc = &mut adc;
+    let pps = &mut pps;
+    let mut ticker = Ticker::every(Duration::from_millis(IO_LOOP_TIME_MS));
+    loop {
+        let loop_start = Instant::now();
+        trace!("process_data: {:?}", Debug2Format(&PROCESS_DATA));
+        trace!("setpoint: {:?}", Debug2Format(&SETPOINT));
+        with_timeout(Duration::from_millis(200), async {
+            write_pps(pps)
+                .await
+                .unwrap_or_else(|e| warn!("PPS write error: {:?}", e));
+            read_pps(pps).await;
+        })
+        .await
+        .unwrap_or_else(|_| {
+            error!("timeout in io i2c loop");
+            ticker.reset_at(Instant::now() - Duration::from_millis(IO_LOOP_TIME_MS));
+        });
+        let loop_time = loop_start.elapsed();
+        debug!("io loop time: {:?} ms", loop_time.as_millis());
+        ticker.next().await;
+    }
+}
+
+#[embassy_executor::task]
+pub async fn rpm_task(mut pcnt_driver: PcntDriver) -> ! {
+    // owned here forever
+    let pcnt_driver = &mut pcnt_driver;
+    let mut ticker = Ticker::every(Duration::from_millis(IO_LOOP_TIME_MS));
+    loop {
+        with_timeout(Duration::from_millis(200), async {
+            read_rpm(pcnt_driver).await;
+        })
+        .await
+        .unwrap_or_else(|_| {
+            error!("timeout in io rpm loop");
+            ticker.reset_at(Instant::now() - Duration::from_millis(IO_LOOP_TIME_MS));
+        });
+        ticker.next().await;
+    }
 }

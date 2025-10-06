@@ -10,12 +10,13 @@ extern crate alloc;
 
 use core::ptr::addr_of_mut;
 use core::sync::atomic::Ordering;
-use defmt::{error, info};
+use defmt::{info};
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::StaticCell;
 
 use embassy_time::{Duration, Ticker, Timer};
+use esp_alloc::HeapStats;
 use esp_hal::{
     gpio::Output,
     main,
@@ -32,7 +33,7 @@ use io::{
 
 use ui::ui_task;
 use crate::board::driver::pps::SetMode;
-use crate::io::{io_task, SETPOINT};
+use crate::io::{io_task, rpm_task, SETPOINT};
 use crate::state::button_task;
 
 #[allow(dead_code)]
@@ -54,11 +55,11 @@ struct CpuLoadHooks {
 
 impl Callbacks for CpuLoadHooks {
     fn before_poll(&mut self) {
-        //self.led_pin.set_high();
+        self.led_pin.set_high();
     }
 
     fn on_idle(&mut self) {
-        //self.led_pin.set_low();
+        self.led_pin.set_low();
     }
 }
 
@@ -76,6 +77,9 @@ fn main() -> ! {
             let executor_app = EXECUTOR_APP.init(Executor::new());
             executor_app.run_with_callbacks(
                 |spawner_app| {
+                    // spawn FAST tasks on APP core
+                    spawner_app.spawn(button_task(res.button_left, res.button_center, res.button_right)).expect("Failed to spawn button_task");
+                    spawner_app.spawn(rpm_task(res.pcnt)).expect("Failed to spawn rpm_task");
                     spawner_app.spawn(app_main(res.rng)).ok();
                 },CpuLoadHooks {
                     core_id: 1,
@@ -91,14 +95,13 @@ fn main() -> ! {
     executor_pro.run_with_callbacks(
         |spawner_pro| {
             spawner_pro
+                // spawn SLOW tasks on PRO core
                 .spawn(ble_scan_task(res.wifi_ble.ble_connector))
                 .expect("Failed to spawn ble_scan_task");
             spawner_pro
                 .spawn(ui_task(res.display))
                 .expect("Failed to spawn ui_task");
-//            spawner_pro.spawn(adc_task(res.adc)).expect("Failed to spawn adc_task");
-            spawner_pro.spawn(io_task(res.adc, res.pcnt, res.pps)).expect("Failed to spawn io_task");
-            spawner_pro.spawn(button_task(res.button_left, res.button_center, res.button_right)).expect("Failed to spawn button_task");
+            spawner_pro.spawn(io_task(res.adc, res.pps)).expect("Failed to spawn io_task");
             spawner_pro.spawn(pro_main()).expect("Failed to spawn pro_main");
         }, CpuLoadHooks {
             core_id: 0,
@@ -109,7 +112,7 @@ fn main() -> ! {
 
 #[embassy_executor::task]
 async fn app_main(mut rng: Rng) -> ! {
-    error!("Starting app_main");
+    info!("Starting app_main");
     Timer::after(Duration::from_millis(5050)).await;
 
     let mut ticker = Ticker::every(Duration::from_millis(1000));
@@ -121,13 +124,14 @@ async fn app_main(mut rng: Rng) -> ! {
     }
 }
 
-//#[esp_hal_embassy::main]
+
 #[embassy_executor::task]
 async fn pro_main() -> () {
-    // res.pps.set_current(0.1).set_voltage(3.3).enable(true);
+    info!("Starting pro_main");
+    let mut ticker = Ticker::every(Duration::from_millis(60_000));
     loop {
-        // let stats: HeapStats = esp_alloc::HEAP.stats();
-        // println!("{}", stats);
-        Timer::after(Duration::from_millis(100)).await;
+        let stats: HeapStats = esp_alloc::HEAP.stats();
+        info!("{}", stats);
+        ticker.next().await;
     }
 }
