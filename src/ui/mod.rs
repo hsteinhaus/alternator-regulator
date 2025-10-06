@@ -121,7 +121,7 @@ impl Widgets {
     }
 
     pub fn update(&mut self) -> Result<(), lvgl::Error> {
-        let current = PROCESS_DATA.current.load(core::sync::atomic::Ordering::Relaxed);
+        let current = PROCESS_DATA.bat_current.load(core::sync::atomic::Ordering::Relaxed);
         let field_voltage = PROCESS_DATA.field_voltage.load(core::sync::atomic::Ordering::Relaxed);
         let field_current = PROCESS_DATA.field_current.load(core::sync::atomic::Ordering::Relaxed);
 

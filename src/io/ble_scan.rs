@@ -1,10 +1,12 @@
+use crate::io::PROCESS_DATA;
 use bt_hci::cmd::le::LeSetScanParams;
 use bt_hci::controller::ControllerCmdSync;
 use bt_hci::event::Vendor;
-use defmt::{error, info, warn, Debug2Format};
+use defmt::{debug, error, info, warn, Debug2Format};
 use embassy_futures::join::join;
 use embassy_time::{Duration, Timer};
 use trouble_host::prelude::*;
+use victron_ble::DeviceState;
 
 /// Max number of connections
 const CONNECTIONS_MAX: usize = 3;
@@ -17,7 +19,11 @@ const VICTRON_ID: u16 = 0x02e1;
 // const VICTRON_KEY: &[u8] = [0x13_u8, 0xc6_u8, 0xbf_u8, 0xf8_u8, 0xdb_u8, 0xef_u8, 0xcf_u8, 0x2d_u8, 0xd5_u8, 0xd5_u8, 0x07_u8, 0x79_u8, 0x8d_u8, 0xc1_u8, 0x0f_u8, 0x9e_u8].as_slice();
 // const MAC: [u8; 6] = [0xd9_u8, 0xd5_u8, 0x51_u8, 0x59_u8, 0x70_u8, 0x4d_u8];
 // Lader
-const VICTRON_KEY: &[u8] = [0x34_u8, 0xa4_u8, 0x20_u8, 0xf8_u8, 0x6f_u8, 0xa0_u8, 0x37_u8, 0x50_u8, 0x8a_u8, 0x83_u8, 0x47_u8, 0xf6_u8, 0x21_u8, 0x4d_u8, 0xc1_u8, 0xf4_u8].as_slice();
+const VICTRON_KEY: &[u8] = [
+    0x34_u8, 0xa4_u8, 0x20_u8, 0xf8_u8, 0x6f_u8, 0xa0_u8, 0x37_u8, 0x50_u8,
+    0x8a_u8, 0x83_u8, 0x47_u8, 0xf6_u8, 0x21_u8, 0x4d_u8, 0xc1_u8, 0xf4_u8,
+]
+.as_slice();
 const MAC: [u8; 6] = [0xc0_u8, 0x12_u8, 0x9b_u8, 0x97_u8, 0x7f_u8, 0xb8_u8];
 const REV_MAC: [u8; 6] = [MAC[5], MAC[4], MAC[3], MAC[2], MAC[1], MAC[0]];
 
@@ -63,12 +69,13 @@ where
             }
             Timer::after(Duration::from_millis(BT_SCAN_INTERVAL)).await;
         }
-    }).await;
+    })
+    .await;
 }
 
 struct VictronBLE {
     paired_mac: BdAddr,
-    paired_key: &'static[u8],
+    paired_key: &'static [u8],
 }
 
 impl VictronBLE {
@@ -76,8 +83,28 @@ impl VictronBLE {
         let device_state_result = victron_ble::parse_manufacturer_data(data, self.paired_key);
         match device_state_result {
             Ok(device_state) => {
-                info!("Victron Data: {:?}", Debug2Format(&device_state));
-                // 2.236 [INFO ] Victron Data: "BatteryMonitor(BatteryMonitorState { time_to_go_mins: 14400.0, battery_voltage_v: 25.66, alarm_reason: AlarmReason(0x0), aux_input: None, battery_current_a: -0.312, consumed_amp_hours_ah: -180.1, state_of_charge_pct: 35.3 })" (altreg_fire27_rs src/task/ble_scan.rs:78)
+                match device_state {
+                    DeviceState::GridCharger(gc_state) => {
+                        // just using this AC charger to bring BLE test data into the system
+                        // fake a current reading from normally non-zero voltage
+                        PROCESS_DATA
+                            .bat_current
+                            .store(gc_state.battery_voltage1_v, core::sync::atomic::Ordering::SeqCst);
+                    }
+                    DeviceState::BatteryMonitor(bm_state) => {
+                        PROCESS_DATA
+                            .bat_voltage
+                            .store(bm_state.battery_current_a, core::sync::atomic::Ordering::SeqCst);
+                        PROCESS_DATA
+                            .bat_current
+                            .store(bm_state.battery_current_a, core::sync::atomic::Ordering::SeqCst);
+                        PROCESS_DATA
+                            .soc
+                            .store(bm_state.state_of_charge_pct, core::sync::atomic::Ordering::SeqCst);
+                    }
+                    _ => {}
+                }
+                debug!("Victron Data: {:?}", Debug2Format(&device_state));
             }
             Err(e) => {
                 warn!("Victron Data Error: {:?}", Debug2Format(&e));
@@ -87,7 +114,6 @@ impl VictronBLE {
 }
 
 impl EventHandler for VictronBLE {
-
     fn on_vendor(&self, vendor: &Vendor) {
         info!("vendor: {:?}", vendor);
     }
@@ -95,23 +121,28 @@ impl EventHandler for VictronBLE {
     fn on_adv_reports(&self, mut it: LeAdvReportsIter<'_>) {
         while let Some(Ok(report)) = it.next() {
             if report.addr != self.paired_mac {
-                warn!("ignoring {:x}, that has unexpectedly passed the scan filter", report.addr);
+                warn!(
+                    "ignoring {:x}, that has unexpectedly passed the scan filter",
+                    report.addr
+                );
                 continue;
             };
             for ad in AdStructure::decode(report.data) {
                 match ad {
                     Ok(ad) => {
                         match ad {
-                            AdStructure::ManufacturerSpecificData {company_identifier, payload}  => {
+                            AdStructure::ManufacturerSpecificData {
+                                company_identifier,
+                                payload,
+                            } => {
                                 if company_identifier == VICTRON_ID {
                                     self.handle_mdata(payload);
                                     //warn!("Victron ad: {:?}", payload);
-                                }
-                                else {
+                                } else {
                                     warn!("ignoring non-Victron ad: {:?}", company_identifier);
                                 }
                             }
-                            _ => { continue }
+                            _ => continue,
                         }
                     }
                     Err(_) => {
@@ -122,7 +153,6 @@ impl EventHandler for VictronBLE {
             }
         }
     }
-
 
     fn on_ext_adv_reports(&self, _reports: LeExtAdvReportsIter) {
         warn!("ext adv reports");
