@@ -52,7 +52,8 @@ pub static SETPOINT: Setpoint = Setpoint {
     contactor_state: AtomicBool::new(false),
 };
 
-const IO_LOOP_TIME_MS: u64 = 100;
+const IO_LOOP_TIME_MS: u64 = 500;
+const RPM_LOOP_TIME_MS: u64 = 100;
 
 #[allow(dead_code)]
 pub async fn read_adc(adc: &mut AdcDriverType) {
@@ -121,7 +122,7 @@ pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
         let loop_start = Instant::now();
         trace!("process_data: {:?}", Debug2Format(&PROCESS_DATA));
         trace!("setpoint: {:?}", Debug2Format(&SETPOINT));
-        with_timeout(Duration::from_millis(200), async {
+        with_timeout(Duration::from_millis(IO_LOOP_TIME_MS*3), async {
             write_pps(pps)
                 .await
                 .unwrap_or_else(|e| warn!("PPS write error: {:?}", e));
@@ -142,16 +143,9 @@ pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
 pub async fn rpm_task(mut pcnt_driver: PcntDriver) -> ! {
     // owned here forever
     let pcnt_driver = &mut pcnt_driver;
-    let mut ticker = Ticker::every(Duration::from_millis(IO_LOOP_TIME_MS));
+    let mut ticker = Ticker::every(Duration::from_millis(RPM_LOOP_TIME_MS));
     loop {
-        with_timeout(Duration::from_millis(200), async {
-            read_rpm(pcnt_driver).await;
-        })
-        .await
-        .unwrap_or_else(|_| {
-            error!("timeout in io rpm loop");
-            ticker.reset_at(Instant::now() - Duration::from_millis(IO_LOOP_TIME_MS));
-        });
+        read_rpm(pcnt_driver).await;
         ticker.next().await;
     }
 }
