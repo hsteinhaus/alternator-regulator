@@ -55,6 +55,7 @@ pub static SETPOINT: Setpoint = Setpoint {
 };
 
 
+const IO_LOOP_TIME_MS: u64 = 100;
 
 #[embassy_executor::task]
 pub async fn io_task(mut adc: AdcDriverType, mut pcnt_driver: PcntDriver, mut pps: PpsDriver) -> ! {
@@ -62,7 +63,7 @@ pub async fn io_task(mut adc: AdcDriverType, mut pcnt_driver: PcntDriver, mut pp
     let _adc = &mut adc;
     let pcnt_driver = &mut pcnt_driver;
     let pps = &mut pps;
-    let mut ticker = Ticker::every(Duration::from_millis(LOOP_TIME_MS));
+    let mut ticker = Ticker::every(Duration::from_millis(IO_LOOP_TIME_MS));
     loop {
         let loop_start = Instant::now();
         trace!("process_data: {:?}", Debug2Format(&PROCESS_DATA));
@@ -78,7 +79,7 @@ pub async fn io_task(mut adc: AdcDriverType, mut pcnt_driver: PcntDriver, mut pp
         .await
         .unwrap_or_else(|_| {
             error!("timeout in io loop");
-            ticker.reset_at(Instant::now() - Duration::from_millis(LOOP_TIME_MS));
+            ticker.reset_at(Instant::now() - Duration::from_millis(IO_LOOP_TIME_MS));
         });
         let loop_time = loop_start.elapsed();
         debug!("io loop time: {:?} ms", loop_time.as_millis());

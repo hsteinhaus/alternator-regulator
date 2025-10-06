@@ -1,3 +1,4 @@
+use async_button::{Button, ButtonConfig};
 use crate::board::driver::{
     analog::{AdcDriver, AdcDriverType},
     display::DisplayDriver,
@@ -6,7 +7,7 @@ use crate::board::driver::{
     wifi_ble::WifiDriver,
 };
 use embedded_hal_bus::spi::ExclusiveDevice;
-use esp_hal::gpio::{Input, InputConfig};
+use esp_hal::gpio::{Input, InputConfig, Pull};
 use esp_hal::system::CpuControl;
 use esp_hal::{
     clock::CpuClock,
@@ -23,19 +24,22 @@ use esp_hal::{
 use esp_hal::rng::Rng;
 
 #[allow(dead_code)]
-pub struct Resources {
-    pub led0: Output<'static>,
-    pub led1: Output<'static>,
+pub struct Resources<'a> {
+    pub led0: Output<'a>,
+    pub led1: Output<'a>,
+    pub button_left: Button<Input<'a>>,
+    pub button_center: Button<Input<'a>>,
+    pub button_right: Button<Input<'a>>,
     pub rng: Rng,
     pub display: DisplayDriver,
     pub wifi_ble: WifiDriver,
     pub pps: PpsDriver,
     pub pcnt: PcntDriver,
     pub adc: AdcDriverType,
-    pub cpu_control: CpuControl<'static>,
+    pub cpu_control: CpuControl<'a>,
 }
 
-impl Resources {
+impl <'a> Resources<'a> {
     pub fn initialize() -> Self {
         let var_name = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
         let config = var_name;
@@ -52,6 +56,15 @@ impl Resources {
         let led0 = Output::new(peripherals.GPIO12, Level::Low, OutputConfig::default());
         let led1 = Output::new(peripherals.GPIO15, Level::Low, OutputConfig::default());
         let rng = Rng::new(peripherals.RNG);
+
+        let button_left = Input::new(peripherals.GPIO39, InputConfig::default().with_pull(Pull::Up));
+        let button_left = Button::new(button_left, ButtonConfig::default());
+
+        let button_center = Input::new(peripherals.GPIO38, InputConfig::default().with_pull(Pull::Up));
+        let button_center = Button::new(button_center, ButtonConfig::default());
+
+        let button_right = Input::new(peripherals.GPIO37, InputConfig::default().with_pull(Pull::Up));
+        let button_right = Button::new(button_right, ButtonConfig::default());
 
         ////////////////////////// Display init ////////////////////////////
         let sclk = peripherals.GPIO18;
@@ -118,9 +131,12 @@ impl Resources {
         );
 
         Self {
-            rng,
             led0,
             led1,
+            button_left,
+            button_center,
+            button_right,
+            rng,
             display: d,
             wifi_ble: wifi_driver,
             pps,

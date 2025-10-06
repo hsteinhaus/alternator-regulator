@@ -33,6 +33,7 @@ use io::{
 use ui::ui_task;
 use crate::board::driver::pps::SetMode;
 use crate::io::{io_task, SETPOINT};
+use crate::state::button_task;
 
 #[allow(dead_code)]
 mod board;
@@ -40,6 +41,7 @@ mod io;
 mod ui;
 mod util;
 mod control;
+mod state;
 
 static mut APP_CORE_STACK: Stack<8192> = Stack::new();
 
@@ -96,6 +98,7 @@ fn main() -> ! {
                 .expect("Failed to spawn ui_task");
 //            spawner_pro.spawn(adc_task(res.adc)).expect("Failed to spawn adc_task");
             spawner_pro.spawn(io_task(res.adc, res.pcnt, res.pps)).expect("Failed to spawn io_task");
+            spawner_pro.spawn(button_task(res.button_left, res.button_center, res.button_right)).expect("Failed to spawn button_task");
             spawner_pro.spawn(pro_main()).expect("Failed to spawn pro_main");
         }, CpuLoadHooks {
             core_id: 0,

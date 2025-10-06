@@ -75,6 +75,7 @@ victron_ble = { path="victron_ble", default-features = false }
 mipidsi = "0.9.0"
 lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
 nb = "1.1.0"
+async-button = { version = "0.2.0", features = ["defmt"] }
 
 
 [build-dependencies]
