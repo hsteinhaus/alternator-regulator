@@ -46,7 +46,7 @@ impl <'a> Resources<'a> {
         let peripherals = esp_hal::init(config);
 
         //esp_alloc::heap_allocator!(size: 4 * 1024);  // 4kB is max for the heap, otherwise "cannot move location counter backwards"
-        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 98767); // for WiFi/BLE, even if the rest of the app is statically allocated
+        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 64000); // for WiFi/BLE, even if the rest of the app is statically allocated (min 59000, max 98767)
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);
@@ -73,7 +73,8 @@ impl <'a> Resources<'a> {
         let bl = peripherals.GPIO32;
 
         #[allow(clippy::manual_div_ceil)]
-        let (rx_buffer, rx_descriptors, tx_buffer, tx_descriptors) = dma_buffers!(4092);
+
+        let (rx_buffer, rx_descriptors, tx_buffer, tx_descriptors) = dma_buffers!( 4092);
         let display_dma_channel = peripherals.DMA_SPI2;
         let dma_tx_buf = DmaTxBuf::new(tx_descriptors, tx_buffer).unwrap();
         let dma_rx_buf = DmaRxBuf::new(rx_descriptors, rx_buffer).unwrap();
