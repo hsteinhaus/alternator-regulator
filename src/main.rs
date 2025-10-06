@@ -1,4 +1,6 @@
+#![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
+
 #![no_std]
 #![no_main]
 #![deny(
@@ -8,12 +10,11 @@
 )]
 extern crate alloc;
 
-use core::ptr::addr_of_mut;
 use core::sync::atomic::Ordering;
 use defmt::{info};
 use esp_backtrace as _;
 use esp_println as _;
-use static_cell::StaticCell;
+use static_cell::{make_static, StaticCell};
 
 use embassy_time::{Duration, Ticker, Timer};
 use esp_alloc::HeapStats;
@@ -44,7 +45,6 @@ mod util;
 mod control;
 mod state;
 
-static mut APP_CORE_STACK: Stack<8192> = Stack::new();
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -70,11 +70,11 @@ fn main() -> ! {
     info!("Embassy initialized!");
 
     // start APP core executor first, as running the PRO core executor will block
+    let app_core_stack = make_static!(Stack::<8192>::new());
     let _guard = res
         .cpu_control
-        .start_app_core(unsafe { &mut *addr_of_mut!(APP_CORE_STACK) }, move || {
-            static EXECUTOR_APP: StaticCell<Executor> = StaticCell::new();
-            let executor_app = EXECUTOR_APP.init(Executor::new());
+        .start_app_core(app_core_stack, move || {
+            let executor_app = make_static!(Executor::new());
             executor_app.run_with_callbacks(
                 |spawner_app| {
                     // spawn FAST tasks on APP core
@@ -90,12 +90,11 @@ fn main() -> ! {
         .unwrap();
 
     // start PRO core executor
-    static EXECUTOR_PRO: StaticCell<::esp_hal_embassy::Executor> = StaticCell::new();
-    let executor_pro = EXECUTOR_PRO.init(::esp_hal_embassy::Executor::new());
+    let executor_pro = make_static!(Executor::new());
     executor_pro.run_with_callbacks(
         |spawner_pro| {
             spawner_pro
-                // spawn SLOW tasks on PRO core
+                // spawn SLOW tasks on APP core
                 .spawn(ble_scan_task(res.wifi_ble.ble_connector))
                 .expect("Failed to spawn ble_scan_task");
             spawner_pro
