@@ -7,6 +7,7 @@ use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;
 use lvgl_rust_sys::*;
+use static_cell::make_static;
 
 const SCREEN_WIDTH: usize = 320;
 const SCREEN_HEIGHT: usize = 240;
@@ -18,9 +19,6 @@ static mut DRAW_BUF: MaybeUninit<lv_disp_draw_buf_t> = MaybeUninit::uninit();
 
 #[link_section = ".dram2_uninit"]
 static mut COLOR_BUF: MaybeUninit<[lv_color_t; SCREEN_WIDTH * COLOR_BUF_LINES]> = MaybeUninit::uninit();
-
-#[link_section = ".dram2_uninit"]
-static mut DISP_DRV: MaybeUninit<lv_disp_drv_t> = MaybeUninit::uninit();
 
 pub fn lvgl_disp_init(user_data: *mut core::ffi::c_void) {
     // Initialize the draw buffer
@@ -34,17 +32,15 @@ pub fn lvgl_disp_init(user_data: *mut core::ffi::c_void) {
     }
 
     // Initialize the display driver
+    let disp_drv = make_static!(lv_disp_drv_t::default());
     unsafe {
-        lv_disp_drv_init(addr_of_mut!(DISP_DRV).cast::<lv_disp_drv_t>());
-
-        let disp_drv = &mut *addr_of_mut!(DISP_DRV).cast::<lv_disp_drv_t>();
+        lv_disp_drv_init(disp_drv);
         disp_drv.hor_res = SCREEN_WIDTH as i16;
         disp_drv.ver_res = SCREEN_HEIGHT as i16;
         disp_drv.flush_cb = Some(flush_cb);
         disp_drv.draw_buf = addr_of_mut!(DRAW_BUF).cast::<lv_disp_draw_buf_t>();
         disp_drv.user_data = user_data;
-
-        lv_disp_drv_register(addr_of_mut!(DISP_DRV).cast::<lv_disp_drv_t>());
+        lv_disp_drv_register(disp_drv);
     }
 }
 

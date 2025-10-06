@@ -14,7 +14,7 @@ use core::sync::atomic::Ordering;
 use defmt::{info};
 use esp_backtrace as _;
 use esp_println as _;
-use static_cell::{make_static, StaticCell};
+use static_cell::{make_static};
 
 use embassy_time::{Duration, Ticker, Timer};
 use esp_alloc::HeapStats;
