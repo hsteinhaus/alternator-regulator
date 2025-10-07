@@ -41,7 +41,6 @@ use crate::state::button_task;
 mod board;
 mod io;
 mod ui;
-mod util;
 mod control;
 mod state;
 

@@ -1,4 +1,3 @@
-use crate::mk_static;
 use esp_hal::{
     peripherals::{BT, WIFI},
     rng::Rng,
@@ -6,6 +5,7 @@ use esp_hal::{
 };
 use esp_wifi::ble::controller::BleConnector;
 use esp_wifi::EspWifiController;
+use static_cell::make_static;
 
 #[allow(dead_code)]
 pub struct WifiDriver {
@@ -15,8 +15,7 @@ pub struct WifiDriver {
 
 impl WifiDriver {
     pub fn new(wifi: WIFI<'static>, bt: BT<'static>, timer: AnyTimer<'static>, rng: Rng) -> Self {
-        let wifi_init = mk_static!(
-            EspWifiController,
+        let wifi_init = make_static!(
             esp_wifi::init(timer, rng).expect("Failed to initialize WIFI/BLE controller")
         );
         let (_wifi_controller, _interfaces) =
