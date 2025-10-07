@@ -8,7 +8,6 @@
     reason = "mem::forget is generally not safe to do with esp_hal types, especially those \
     holding buffers for the duration of a data transfer."
 )]
-extern crate alloc;
 
 use core::sync::atomic::Ordering;
 use defmt::{info};
@@ -35,7 +34,6 @@ use io::{
 use ui::ui_task;
 use crate::board::driver::pps::SetMode;
 use crate::io::{io_task, rpm_task, SETPOINT};
-use crate::state::button_task;
 
 #[allow(dead_code)]
 mod board;
@@ -68,6 +66,10 @@ fn main() -> ! {
     let mut res = startup::Resources::initialize(); // intentionally non-static, compontents are intended to be moved out into the tasks
     info!("Embassy initialized!");
 
+    let channel = state::prepare_channel();
+    let sender = channel.sender();
+    let receiver = channel.receiver();
+
     // start APP core executor first, as running the PRO core executor will block
     let app_core_stack = make_static!(Stack::<8192>::new());
     let _guard = res
@@ -77,9 +79,9 @@ fn main() -> ! {
             executor_app.run_with_callbacks(
                 |spawner_app| {
                     // spawn FAST tasks on APP core
-                    spawner_app.spawn(button_task(res.button_left, res.button_center, res.button_right)).expect("Failed to spawn button_task");
-                    spawner_app.spawn(rpm_task(res.pcnt)).expect("Failed to spawn rpm_task");
-                    spawner_app.spawn(app_main(res.rng)).ok();
+                    spawner_app.must_spawn(state::button_task(sender, res.button_left, res.button_center, res.button_right));
+                    spawner_app.must_spawn(rpm_task(res.pcnt));
+                    spawner_app.must_spawn(app_main(res.rng));
                 },CpuLoadHooks {
                     core_id: 1,
                     led_pin: res.led1,
@@ -92,15 +94,11 @@ fn main() -> ! {
     let executor_pro = make_static!(Executor::new());
     executor_pro.run_with_callbacks(
         |spawner_pro| {
-            spawner_pro
-                // spawn SLOW tasks on APP core
-                .spawn(ble_scan_task(res.wifi_ble.ble_connector))
-                .expect("Failed to spawn ble_scan_task");
-            spawner_pro
-                .spawn(ui_task(res.display))
-                .expect("Failed to spawn ui_task");
-            spawner_pro.spawn(io_task(res.adc, res.pps)).expect("Failed to spawn io_task");
-            spawner_pro.spawn(pro_main()).expect("Failed to spawn pro_main");
+            spawner_pro.must_spawn(ble_scan_task(res.wifi_ble.ble_connector));
+            spawner_pro.must_spawn(ui_task(res.display));
+            spawner_pro.must_spawn(io_task(res.adc, res.pps));
+            spawner_pro.must_spawn(state::state_task(receiver));
+            spawner_pro.must_spawn(pro_main());
         }, CpuLoadHooks {
             core_id: 0,
             led_pin: res.led0,
@@ -121,7 +119,6 @@ async fn app_main(mut rng: Rng) -> ! {
         ticker.next().await;
     }
 }
-
 
 #[embassy_executor::task]
 async fn pro_main() -> () {
