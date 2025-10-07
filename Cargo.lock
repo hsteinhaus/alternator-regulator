@@ -41,6 +41,7 @@ dependencies = [
  "embassy-executor",
  "embassy-futures",
  "embassy-net",
+ "embassy-sync 0.7.2",
  "embassy-time 0.4.0",
  "embedded-graphics",
  "embedded-hal 1.0.0",
@@ -53,6 +54,7 @@ dependencies = [
  "esp-println",
  "esp-wifi",
  "heapless 0.9.1",
+ "log",
  "lvgl_rust_sys",
  "mipidsi",
  "nb 1.1.0",
@@ -584,6 +586,7 @@ checksum = "73974a3edbd0bd286759b3d483540f0ebef705919a5f56f4fc7709066f71689b"
 dependencies = [
  "cfg-if",
  "critical-section",
+ "defmt 1.0.1",
  "embedded-io-async",
  "futures-core",
  "futures-sink",

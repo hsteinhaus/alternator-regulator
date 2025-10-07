@@ -34,6 +34,7 @@ esp-hal-embassy = { version = "0.9.0", features = ["esp32", "defmt"] }
 
 # for more networking protocol support see https://crates.io/crates/edge-net
 embassy-executor = { version = "0.7.0", features = ["defmt", "nightly"] }
+embassy-sync = { version = "0.7.2", features = ["defmt"] }
 embassy-time = { version = "0.4.0", features = ["defmt"] }
 embassy-net = { version = "0.7.0", features = [
     "dhcpv4",
@@ -77,6 +78,7 @@ lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
 nb = "1.1.0"
 async-button = { version = "0.2.0", features = ["defmt"] }
 thiserror-no-std = "2.0.2"
+log = "0.4.28"
 
 
 [build-dependencies]
