@@ -54,13 +54,11 @@ dependencies = [
  "esp-println",
  "esp-wifi",
  "heapless 0.9.1",
- "log",
  "lvgl_rust_sys",
  "mipidsi",
  "nb 1.1.0",
  "num-derive",
  "num-traits",
- "smoltcp",
  "static_cell",
  "thiserror-no-std",
  "trouble-host",
@@ -805,8 +803,6 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 [[package]]
 name = "esp-alloc"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e95f1de57ce5a6600368f3d3c931b0dfe00501661e96f5ab83bc5cdee031784"
 dependencies = [
  "allocator-api2",
  "cfg-if",
@@ -820,8 +816,6 @@ dependencies = [
 [[package]]
 name = "esp-backtrace"
 version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f270a29a3c4e492399b13e157b10151a7616cba69c4d554076ea93ed1bd2916"
 dependencies = [
  "cfg-if",
  "defmt 1.0.1",
@@ -834,8 +828,6 @@ dependencies = [
 [[package]]
 name = "esp-bootloader-esp-idf"
 version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a093dbdc64b0288baacc214c2e8c2f3f13ecbf979c36ee2f63797ecf22538f1"
 dependencies = [
  "cfg-if",
  "document-features",
@@ -849,8 +841,6 @@ dependencies = [
 [[package]]
 name = "esp-config"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "abd4a8db4b72794637a25944bc8d361c3cc271d4f03987ce8741312b6b61529c"
 dependencies = [
  "document-features",
  "esp-metadata-generated",
@@ -862,8 +852,6 @@ dependencies = [
 [[package]]
 name = "esp-hal"
 version = "1.0.0-rc.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3887eda2917deef3d99e7a5c324f9190714e99055361ad36890dffd0a995b49"
 dependencies = [
  "bitfield",
  "bitflags 2.9.4",
@@ -913,8 +901,6 @@ dependencies = [
 [[package]]
 name = "esp-hal-embassy"
 version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d000d94064c485f86adc6b02b541e2f072e03321b4f03d4303b7ff3062c7e692"
 dependencies = [
  "cfg-if",
  "critical-section",
@@ -936,8 +922,6 @@ dependencies = [
 [[package]]
 name = "esp-hal-procmacros"
 version = "0.19.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbece384edaf0d1eabfa45afa96d910634d4158638ef983b2d419a8dec832246"
 dependencies = [
  "document-features",
  "litrs",
@@ -951,8 +935,6 @@ dependencies = [
 [[package]]
 name = "esp-metadata"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6fbc1d166be84c0750f121e95c8989ddebd7e7bdd86af3594a6cfb34f039650"
 dependencies = [
  "anyhow",
  "basic-toml",
@@ -966,8 +948,6 @@ dependencies = [
 [[package]]
 name = "esp-metadata-generated"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "189d36b8c8a752bdebec67fd02a15ebb1432feea345553749bca7ce2393cc795"
 dependencies = [
  "esp-metadata",
 ]
@@ -975,22 +955,17 @@ dependencies = [
 [[package]]
 name = "esp-println"
 version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e7e3ab41e96093d7fd307e93bfc88bd646a8ff23036ebf809e116b18869f719"
 dependencies = [
  "critical-section",
  "defmt 1.0.1",
  "document-features",
  "esp-metadata-generated",
  "log",
- "portable-atomic",
 ]
 
 [[package]]
 name = "esp-riscv-rt"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a00370dfcb0ccc01c6b2540076379c6efd6890a27f584de217c38e3239e19d5"
 dependencies = [
  "document-features",
  "riscv",
@@ -1000,8 +975,6 @@ dependencies = [
 [[package]]
 name = "esp-rom-sys"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "646aca2b30503b6c6f34250255fbd5887fd0c4104ea90802c1fea34f3035e7d6"
 dependencies = [
  "cfg-if",
  "document-features",
@@ -1011,8 +984,6 @@ dependencies = [
 [[package]]
 name = "esp-wifi"
 version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84908f2e95cb99a200cf448abafc416576338be590778a15d9224eee237f3210"
 dependencies = [
  "allocator-api2",
  "bt-hci",
@@ -2197,8 +2168,6 @@ dependencies = [
 [[package]]
 name = "xtensa-lx"
 version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3a564fffeb3cd773a524e8d8a5c66ca5e9739ea7450e36a3e6a54dd31f1e652f"
 dependencies = [
  "critical-section",
 ]
@@ -2206,8 +2175,6 @@ dependencies = [
 [[package]]
 name = "xtensa-lx-rt"
 version = "0.20.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "520a8fb0121eb6868f4f5ff383e262dc863f9042496724e01673a98a9b7e6c2b"
 dependencies = [
  "document-features",
  "r0",
@@ -2218,8 +2185,6 @@ dependencies = [
 [[package]]
 name = "xtensa-lx-rt-proc-macros"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5a56a616147f5947ceb673790dd618d77b30e26e677f4a896df049d73059438"
 dependencies = [
  "proc-macro2",
  "quote",

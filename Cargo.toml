@@ -12,27 +12,21 @@ bench = false
 
 
 [dependencies]
-atomic_float = { version = "1.1.0"}
-defmt = "1.0.1"
-#critical-section = "1.2.0"
-heapless = "0.9.1"
-static_cell = { version = "2.1.1", features = ["nightly"] }
-num-traits = { version="0.2.19", default-features = false }
-num-derive = "0.4.2"
+# from esp-hal repo
+esp-alloc           = { path = "esp-hal/esp-alloc", features = ["defmt", "internal-heap-stats"] }
+esp-backtrace       = { path = "esp-hal/esp-backtrace", features = ["esp32", "exception-handler", "panic-handler", "defmt"] }
+esp-println         = { path = "esp-hal/esp-println", features = ["esp32", "defmt-espflash", "timestamp", "critical-section", "uart"], default-features = false }
+esp-bootloader-esp-idf = { path = "esp-hal/esp-bootloader-esp-idf", features = ["esp32"] }
+esp-hal             = { path = "esp-hal/esp-hal", features = ["esp32", "defmt", "unstable"] }
+esp-hal-embassy     = { path = "esp-hal/esp-hal-embassy", features = ["esp32", "defmt"] }
+esp-wifi            = { path = "esp-hal/esp-wifi", features = ["esp32", "defmt", "ble", "builtin-scheduler", "coex", "esp-alloc", "wifi", "smoltcp"] }
 
+# embeded-hal family
 embedded-hal =  { version = "1.0.0", features = ["defmt-03"] }
 embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
 embedded-graphics = { version = "0.8.1", features = ["defmt"] }
 
-esp-alloc = { version = "0.8.0", features = ["defmt", "internal-heap-stats"] }
-esp-backtrace = { version = "0.17.0", features = ["esp32", "exception-handler", "panic-handler", "defmt"] }
-esp-println = { version = "0.15.0", features = ["esp32", "defmt-espflash", "timestamp"] }
-
-esp-bootloader-esp-idf = { version = "0.2.0", features = ["esp32"] }
-esp-hal = { version = "=1.0.0-rc.0", features = ["esp32", "defmt", "unstable", ] }
-esp-hal-embassy = { version = "0.9.0", features = ["esp32", "defmt"] }
-
-# for more networking protocol support see https://crates.io/crates/edge-net
+# Embassy
 embassy-executor = { version = "0.7.0", features = ["defmt", "nightly"] }
 embassy-sync = { version = "0.7.2", features = ["defmt"] }
 embassy-time = { version = "0.4.0", features = ["defmt"] }
@@ -45,30 +39,27 @@ embassy-net = { version = "0.7.0", features = [
 ] }
 embassy-futures = "0.1.2"
 #embassy-embedded-hal = { version = "0.5.0", features = ["defmt", "time"] }
+#smoltcp = { version = "0.12.0", default-features = false, features = [
+#    "defmt",
+#    "medium-ethernet",
+#    "multicast",
+#    "proto-dhcpv4",
+#    "proto-dns",
+#    "proto-ipv4",
+#    "socket-dns",
+#    "socket-icmp",
+#    "socket-raw",
+#    "socket-tcp",
+#    "socket-udp",
+#] }
 
-esp-wifi = { version = "0.15.0", features = [
-    "ble",
-    "builtin-scheduler",
-    "coex",
-    "esp-alloc",
-    "esp32",
-    "defmt",
-    "smoltcp",
-    "wifi",
-] }
-smoltcp = { version = "0.12.0", default-features = false, features = [
-    "defmt",
-    "medium-ethernet",
-    "multicast",
-    "proto-dhcpv4",
-    "proto-dns",
-    "proto-ipv4",
-    "socket-dns",
-    "socket-icmp",
-    "socket-raw",
-    "socket-tcp",
-    "socket-udp",
-] }
+# others
+atomic_float = { version = "1.1.0"}
+defmt = "1.0.1"
+heapless = "0.9.1"
+static_cell = { version = "2.1.1", features = ["nightly"] }
+num-traits = { version="0.2.19", default-features = false }
+num-derive = "0.4.2"
 
 trouble-host = { version="0.2.4", features = ["gatt", "scan", "defmt"] }
 bt-hci = { version = "0.3.2" }
@@ -78,7 +69,6 @@ lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
 nb = "1.1.0"
 async-button = { version = "0.2.0", features = ["defmt"] }
 thiserror-no-std = "2.0.2"
-log = "0.4.28"
 
 
 [build-dependencies]
