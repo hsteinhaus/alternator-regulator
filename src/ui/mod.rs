@@ -3,7 +3,7 @@ mod lvgl_buffers;
 
 use core::ffi::{c_char, c_void, CStr};
 use defmt::warn;
-use embassy_time::{Duration, Timer};
+use embassy_time::{Duration, Ticker};
 use static_cell::StaticCell;
 
 use lvgl_rust_sys::{
@@ -93,6 +93,8 @@ impl Widgets {
     }
 }
 
+const LVGL_LOOP_TIME_MS: u64 = 5*LV_DISP_DEF_REFR_PERIOD as u64;
+
 #[embassy_executor::task]
 pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
     unsafe {
@@ -108,13 +110,14 @@ pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
         // UI loop
         lv_timer_handler(); // first rendering takes a long time, so do it once befor turing on the backlight
         display_driver.bl_on();
+        let mut ticker = Ticker::every(Duration::from_millis(LVGL_LOOP_TIME_MS));
         loop {
             widgets
                 .update()
                 .unwrap_or_else(|e| warn!("Failed to update widgets: {:?}", e));
-            lv_tick_inc(LV_DISP_DEF_REFR_PERIOD);
+            lv_tick_inc(LVGL_LOOP_TIME_MS as u32);
             lv_timer_handler();
-            Timer::after(Duration::from_millis(LV_DISP_DEF_REFR_PERIOD as u64)).await;
+            ticker.next().await;
         }
     }
 }
