@@ -33,7 +33,8 @@ use io::{
 
 use ui::ui_task;
 use crate::board::driver::pps::SetMode;
-use crate::io::{io_task, rpm_task, SETPOINT};
+use crate::io::{io_task, rpm::rpm_task, SETPOINT};
+use crate::state::regulator_mode::regulator_mode_task;
 
 #[allow(dead_code)]
 mod board;
@@ -67,7 +68,8 @@ fn main() -> ! {
     info!("Embassy initialized!");
 
     let channel = state::prepare_channel();
-    let sender = channel.sender();
+    let button_sender = channel.sender();
+    let rpm_sender = channel.sender();
     let receiver = channel.receiver();
 
     // start APP core executor first, as running the PRO core executor will block
@@ -79,9 +81,10 @@ fn main() -> ! {
             executor_app.run_with_callbacks(
                 |spawner_app| {
                     // spawn FAST tasks on APP core
-                    spawner_app.must_spawn(state::button_task(sender, res.button_left, res.button_center, res.button_right));
-                    spawner_app.must_spawn(rpm_task(res.pcnt));
+                    spawner_app.must_spawn(state::button_task(button_sender, res.button_left, res.button_center, res.button_right));
+                    spawner_app.must_spawn(rpm_task(rpm_sender, res.pcnt));
                     spawner_app.must_spawn(app_main(res.rng));
+                    spawner_app.must_spawn(regulator_mode_task());
                 },CpuLoadHooks {
                     core_id: 1,
                     led_pin: res.led1,
@@ -105,6 +108,7 @@ fn main() -> ! {
         },
     );
 }
+
 
 #[embassy_executor::task]
 async fn app_main(mut rng: Rng) -> ! {

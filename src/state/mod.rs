@@ -1,3 +1,5 @@
+pub mod regulator_mode;
+
 #[allow(unused_imports)]
 use defmt::{debug, error, Format};
 

@@ -69,6 +69,7 @@ lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
 nb = "1.1.0"
 async-button = { version = "0.2.0", features = ["defmt"] }
 thiserror-no-std = "2.0.2"
+statig = { version = "0.4.1", features = ["async"] }
 
 
 [build-dependencies]
