@@ -1,6 +1,8 @@
+#[allow(unused_imports)]
+use defmt::{debug, error, Format};
+
 use async_button::{Button, ButtonEvent as AsyncButtonEvent};
-use static_cell::StaticCell;
-use defmt::{debug, Format};
+use defmt::info;
 use embassy_futures::select::{select3, Either3};
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex,
@@ -8,7 +10,25 @@ use embassy_sync::{
 };
 use embassy_time::{Duration, Ticker};
 use esp_hal::gpio::Input;
+use static_cell::StaticCell;
 
+#[allow(unused)]
+#[derive(Copy, Clone, Debug, Format)]
+pub enum TemperatureEvent {
+    Normal,
+    Warning,
+    Overheated,
+}
+
+#[allow(unused)]
+#[derive(Copy, Clone, Debug, Format)]
+pub enum RpmEvent {
+    Low,
+    HighIdle,
+    Normal,
+}
+
+#[allow(unused)]
 #[derive(Copy, Clone, Debug, Format)]
 pub enum ButtonEvent {
     DecShort(usize),
@@ -19,9 +39,19 @@ pub enum ButtonEvent {
     IncLong,
 }
 
-const MAX_EVENTS: usize = 10;
-type ChannelType = Channel<CriticalSectionRawMutex, ButtonEvent, MAX_EVENTS>;
+#[allow(unused)]
+#[derive(Copy, Clone, Debug, Format)]
+pub enum RegulatorEvent {
+    Rpm(RpmEvent),
+    Button(ButtonEvent),
+    Temperature(TemperatureEvent),
+}
 
+const MAX_EVENTS: usize = 10;
+
+pub type SenderType = Sender<'static, CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+type ReceiverType = Receiver<'static, CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+type ChannelType = Channel<CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
 
 pub fn prepare_channel() -> &'static mut ChannelType {
     static EVENT_CHANNEL: StaticCell<ChannelType> = StaticCell::new();
@@ -29,18 +59,18 @@ pub fn prepare_channel() -> &'static mut ChannelType {
 }
 
 #[embassy_executor::task]
-pub async fn state_task(receiver: Receiver<'static, CriticalSectionRawMutex, ButtonEvent, 10>) -> ! {
+pub async fn state_task(receiver: ReceiverType) -> ! {
     let mut ticker = Ticker::every(Duration::from_millis(100));
     loop {
         let evt = receiver.receive().await;
-        debug!("received button evt: {:?}", evt);
+        info!("received event: {:?}", evt);
         ticker.next().await;
     }
 }
 
 #[embassy_executor::task]
 pub async fn button_task(
-    sender: Sender<'static, CriticalSectionRawMutex, ButtonEvent, 10>,
+    sender: SenderType,
     mut button_left: Button<Input<'static>>,
     mut button_center: Button<Input<'static>>,
     mut button_right: Button<Input<'static>>,
@@ -61,7 +91,7 @@ pub async fn button_task(
                 AsyncButtonEvent::LongPress => ButtonEvent::IncLong,
             },
         };
-        sender.send(button_event).await;
+        sender.send(RegulatorEvent::Button(button_event)).await;
         // intentionally no timer/ticker here, loop is inhibited by polling the update() method of the buttons
     }
 }

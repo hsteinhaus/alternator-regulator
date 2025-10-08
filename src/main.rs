@@ -41,7 +41,7 @@ mod io;
 mod ui;
 mod control;
 mod state;
-
+mod util;
 
 #[allow(dead_code)]
 #[derive(Debug)]
