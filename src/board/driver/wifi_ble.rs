@@ -1,27 +1,30 @@
-use bt_hci::controller::ExternalController;
 use esp_hal::{
     peripherals::{BT, WIFI},
+    rng::Rng,
+    timer::AnyTimer,
 };
-use esp_radio::ble::controller::BleConnector;
-use static_cell::{make_static};
-
-pub type BleControllerType = ExternalController<BleConnector<'static>, 20>;
+use esp_wifi::ble::controller::BleConnector;
+use esp_wifi::EspWifiController;
+use static_cell::make_static;
 
 #[allow(dead_code)]
 pub struct WifiDriver {
-    pub radio: &'static esp_radio::Controller<'static>,
-    pub ble_controller: BleControllerType,
+    pub wifi_init: &'static EspWifiController<'static>,
+    pub ble_connector: BleConnector<'static>,
 }
 
 impl WifiDriver {
-    pub fn new(_wifi: WIFI<'static>, bt: BT<'static>/*, timer: AnyTimer<'static>, rng: Rng*/) -> Self {
-        let radio = make_static!(esp_radio::init().unwrap());
-        let ble_connector = BleConnector::new(radio, bt, Default::default()).unwrap();
-        let ble_controller: BleControllerType = ExternalController::new(ble_connector);
+    pub fn new(wifi: WIFI<'static>, bt: BT<'static>, timer: AnyTimer<'static>, rng: Rng) -> Self {
+        let wifi_init = make_static!(
+            esp_wifi::init(timer, rng).expect("Failed to initialize WIFI/BLE controller")
+        );
+        let (_wifi_controller, _interfaces) =
+            esp_wifi::wifi::new(wifi_init, wifi).expect("Failed to initialize WIFI controller");
+        let ble_connector = BleConnector::new(wifi_init, bt);
 
         Self {
-            radio,
-            ble_controller,
+            wifi_init,
+            ble_connector,
         }
     }
 }

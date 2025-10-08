@@ -1,5 +1,6 @@
 use async_button::{Button, ButtonConfig};
 use crate::board::driver::{
+    analog::{AdcDriver, AdcDriverType},
     display::DisplayDriver,
     pcnt::PcntDriver,
     pps::PpsDriver,
@@ -7,7 +8,9 @@ use crate::board::driver::{
 };
 use embedded_hal_bus::spi::ExclusiveDevice;
 use esp_hal::gpio::{Input, InputConfig, Pull};
+use esp_hal::system::CpuControl;
 use esp_hal::{
+    clock::CpuClock,
     delay::Delay,
     dma::{DmaRxBuf, DmaTxBuf},
     dma_buffers,
@@ -16,10 +19,9 @@ use esp_hal::{
     spi::master::{Config as SpiConfig, Spi},
     spi::Mode,
     time::Rate,
-    timer::{timg::TimerGroup},
+    timer::{timg::TimerGroup, AnyTimer},
 };
-use esp_hal::interrupt::software::SoftwareInterruptControl;
-use esp_hal::peripherals::{Peripherals, CPU_CTRL};
+use esp_hal::rng::Rng;
 
 #[allow(dead_code)]
 pub struct Resources<'a> {
@@ -28,30 +30,32 @@ pub struct Resources<'a> {
     pub button_left: Button<Input<'a>>,
     pub button_center: Button<Input<'a>>,
     pub button_right: Button<Input<'a>>,
+    pub rng: Rng,
     pub display: DisplayDriver,
     pub wifi_ble: WifiDriver,
     pub pps: PpsDriver,
     pub pcnt: PcntDriver,
-//    pub adc: AdcDriverType,
-}
-
-pub struct RemainingPeripherals<'a> {
-    pub cpu_ctrl: CPU_CTRL<'a>,
-    pub sw_int: SoftwareInterruptControl<'a>,
+    pub adc: AdcDriverType,
+    pub cpu_control: CpuControl<'a>,
 }
 
 impl <'a> Resources<'a> {
-    pub fn initialize(peripherals: Peripherals) -> (Self, RemainingPeripherals<'a>) {
-        //esp_alloc::heap_allocator!(size: 4 * 1024);  // 4kB is max for the heap, otherwise "cannot move location counter backwards"
-        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 72000); // for WiFi/BLE, even if the rest of the app is statically allocated (min 59000, max 98767)
+    pub fn initialize() -> Self {
+        let var_name = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
+        let config = var_name;
+        let peripherals = esp_hal::init(config);
 
-        let sw_int = SoftwareInterruptControl::new(peripherals.SW_INTERRUPT);
-        let timg0 = TimerGroup::new(peripherals.TIMG0);
-        esp_rtos::start(timg0.timer0);
+        //esp_alloc::heap_allocator!(size: 4 * 1024);  // 4kB is max for the heap, otherwise "cannot move location counter backwards"
+        esp_alloc::heap_allocator!(#[link_section = ".dram2_uninit"] size: 64000); // for WiFi/BLE, even if the rest of the app is statically allocated (min 59000, max 98767)
+
+        let timer0 = TimerGroup::new(peripherals.TIMG1);
+        esp_hal_embassy::init(timer0.timer0);
+
 
         /////////////////////////// GPIO init ////////////////////////////
         let led0 = Output::new(peripherals.GPIO12, Level::Low, OutputConfig::default());
         let led1 = Output::new(peripherals.GPIO15, Level::Low, OutputConfig::default());
+        let rng = Rng::new(peripherals.RNG);
 
         let button_left = Input::new(peripherals.GPIO39, InputConfig::default().with_pull(Pull::Up));
         let button_left = Button::new(button_left, ButtonConfig::default());
@@ -69,6 +73,7 @@ impl <'a> Resources<'a> {
         let bl = peripherals.GPIO32;
 
         #[allow(clippy::manual_div_ceil)]
+
         let (rx_buffer, rx_descriptors, tx_buffer, tx_descriptors) = dma_buffers!( 4092);
         let display_dma_channel = peripherals.DMA_SPI2;
         let dma_tx_buf = DmaTxBuf::new(tx_descriptors, tx_buffer).unwrap();
@@ -116,33 +121,29 @@ impl <'a> Resources<'a> {
         let pcnt = PcntDriver::initialize(peripherals.PCNT, rpm_pin).expect("PCNT module init failed");
 
         ////////////////////////// ADC init ////////////////////////////
-        //let adc = AdcDriver::initialize(peripherals.ADC2, peripherals.GPIO26);
+        let adc = AdcDriver::initialize(peripherals.ADC2, peripherals.GPIO26);
 
-        /////////////////////// WiFi & BLE init ////////////////////////////
-        let wifi_driver = WifiDriver::new(
+        ////////////////////////// WiFi & BLE init ////////////////////////////
+        let wifi_driver = crate::board::driver::wifi_ble::WifiDriver::new(
             peripherals.WIFI,
             peripherals.BT,
-            // AnyTimer::from(timg0),
-            // rng,
+            AnyTimer::from(TimerGroup::new(peripherals.TIMG0).timer0),
+            rng,
         );
 
-        (
-            Self {
-                led0,
-                led1,
-                button_left,
-                button_center,
-                button_right,
-                display: d,
-                wifi_ble: wifi_driver,
-                pps,
-                pcnt,
-//                adc,
-            },
-            RemainingPeripherals {
-                cpu_ctrl: peripherals.CPU_CTRL,
-                sw_int: sw_int,
-            },
-        )
+        Self {
+            led0,
+            led1,
+            button_left,
+            button_center,
+            button_right,
+            rng,
+            display: d,
+            wifi_ble: wifi_driver,
+            pps,
+            pcnt,
+            adc,
+            cpu_control: CpuControl::new(peripherals.CPU_CTRL),
+        }
     }
 }

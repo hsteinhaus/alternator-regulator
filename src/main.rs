@@ -11,7 +11,6 @@
 
 use core::sync::atomic::Ordering;
 use defmt::{info};
-use embassy_executor::Spawner;
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::{make_static};
@@ -20,11 +19,11 @@ use embassy_time::{Duration, Ticker, Timer};
 use esp_alloc::HeapStats;
 use esp_hal::{
     gpio::Output,
+    main,
     system::{Stack},
 };
-use esp_hal::clock::CpuClock;
 use esp_hal::rng::Rng;
-use esp_rtos::embassy::{Callbacks, Executor};
+use esp_hal_embassy::{Callbacks, Executor};
 
 use board::startup;
 
@@ -61,97 +60,56 @@ impl Callbacks for CpuLoadHooks {
     }
 }
 
-// #[main]
-// #[allow(dead_code)]
-// fn main() -> ! {
-//     let mut res = startup::Resources::initialize(); // intentionally non-static, compontents are intended to be moved out into the tasks
-//     info!("Embassy initialized!");
-//
-//     let channel = state::prepare_channel();
-//     let sender = channel.sender();
-//     let receiver = channel.receiver();
-//
-//     // start APP core executor first, as running the PRO core executor will block
-//     let app_core_stack = make_static!(Stack::<8192>::new());
-//     let _guard = res
-//         .cpu_control
-//         .start_app_core(app_core_stack, move || {
-//             let executor_app = make_static!(Executor::new());
-//             executor_app.run_with_callbacks(
-//                 |spawner_app| {
-//                     // spawn FAST tasks on APP core
-// //                    spawner_app.must_spawn(state::button_task(sender, res.button_left, res.button_center, res.button_right));
-// //                    spawner_app.must_spawn(rpm_task(res.pcnt));
-//                     spawner_app.must_spawn(app_main(res.rng));
-//                 },CpuLoadHooks {
-//                     core_id: 1,
-//                     led_pin: res.led1,
-//                 },
-//             );
-//         })
-//         .unwrap();
-//
-//     // start PRO core executor
-//     let executor_pro = make_static!(Executor::new());
-//     executor_pro.run_with_callbacks(
-//         |spawner_pro| {
-// //            spawner_pro.must_spawn(ble_scan_task(res.wifi_ble.ble_controller));
-//             spawner_pro.must_spawn(ui_task(res.display));
-//             spawner_pro.must_spawn(io_task(res.adc, res.pps));
-//             spawner_pro.must_spawn(state::state_task(receiver));
-//             spawner_pro.must_spawn(pro_main());
-//         }, CpuLoadHooks {
-//             core_id: 0,
-//             led_pin: res.led0,
-//         },
-//     );
-// }
-
-
-#[esp_rtos::main]
-async fn main(spawner_pro: Spawner) {
-    let config = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
-    let peripherals = esp_hal::init(config);
-
-    let (res, peripherals) = startup::Resources::initialize(peripherals); // intentionally non-static, compontents are intended to be moved out into the tasks
+#[main]
+#[allow(dead_code)]
+fn main() -> ! {
+    let mut res = startup::Resources::initialize(); // intentionally non-static, compontents are intended to be moved out into the tasks
     info!("Embassy initialized!");
 
     let channel = state::prepare_channel();
     let sender = channel.sender();
     let receiver = channel.receiver();
 
+    // start APP core executor first, as running the PRO core executor will block
     let app_core_stack = make_static!(Stack::<8192>::new());
-    esp_rtos::start_second_core(
-        peripherals.cpu_ctrl,
-        peripherals.sw_int.software_interrupt0,
-        peripherals.sw_int.software_interrupt1,
-        app_core_stack,
-        move || {
-            let executor = make_static!(Executor::new());
-            executor.run(|spawner_app| {
-                spawner_app.must_spawn(state::button_task(sender, res.button_left, res.button_center, res.button_right));
-                spawner_app.must_spawn(rpm_task(res.pcnt));
-                spawner_app.must_spawn(app_main());
-            });
-         }
-    );
+    let _guard = res
+        .cpu_control
+        .start_app_core(app_core_stack, move || {
+            let executor_app = make_static!(Executor::new());
+            executor_app.run_with_callbacks(
+                |spawner_app| {
+                    // spawn FAST tasks on APP core
+                    spawner_app.must_spawn(state::button_task(sender, res.button_left, res.button_center, res.button_right));
+                    spawner_app.must_spawn(rpm_task(res.pcnt));
+                    spawner_app.must_spawn(app_main(res.rng));
+                },CpuLoadHooks {
+                    core_id: 1,
+                    led_pin: res.led1,
+                },
+            );
+        })
+        .unwrap();
 
-    // spawn all PRO tasks
-    spawner_pro.must_spawn(ble_scan_task(res.wifi_ble.ble_controller));
-    spawner_pro.must_spawn(ui_task(res.display));
-    spawner_pro.must_spawn(io_task(res.pps));
-    spawner_pro.must_spawn(state::state_task(receiver));
-    pro_main().await;
+    // start PRO core executor
+    let executor_pro = make_static!(Executor::new());
+    executor_pro.run_with_callbacks(
+        |spawner_pro| {
+            spawner_pro.must_spawn(ble_scan_task(res.wifi_ble.ble_connector));
+            spawner_pro.must_spawn(ui_task(res.display));
+            spawner_pro.must_spawn(io_task(res.adc, res.pps));
+            spawner_pro.must_spawn(state::state_task(receiver));
+            spawner_pro.must_spawn(pro_main());
+        }, CpuLoadHooks {
+            core_id: 0,
+            led_pin: res.led0,
+        },
+    );
 }
 
-
-
-
 #[embassy_executor::task]
-async fn app_main() -> ! {
+async fn app_main(mut rng: Rng) -> ! {
     info!("Starting app_main");
     Timer::after(Duration::from_millis(5050)).await;
-    let rng = Rng::new();
 
     let mut ticker = Ticker::every(Duration::from_millis(1000));
     loop {
@@ -162,6 +120,7 @@ async fn app_main() -> ! {
     }
 }
 
+#[embassy_executor::task]
 async fn pro_main() -> () {
     info!("Starting pro_main");
     let mut ticker = Ticker::every(Duration::from_millis(60_000));
