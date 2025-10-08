@@ -11,7 +11,7 @@ use static_cell::make_static;
 
 const SCREEN_WIDTH: usize = 320;
 const SCREEN_HEIGHT: usize = 240;
-const COLOR_BUF_LINES: usize = 48;
+const COLOR_BUF_LINES: usize = 40;
 
 // buffers and driver struct placed in .dram2_uninit section for resource reasons
 #[link_section = ".dram2_uninit"]
