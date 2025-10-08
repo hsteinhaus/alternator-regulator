@@ -1,13 +1,15 @@
 use crate::board::driver::analog::AdcDriverType;
-use crate::board::driver::pcnt::PcntDriver;
 use crate::board::driver::pps::{Error as PpsError, PpsDriver, RunningMode, SetMode};
 use atomic_float::AtomicF32;
 use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use defmt::{debug, error, trace, warn, Debug2Format};
 use embassy_time::{with_timeout, Duration, Instant, Ticker};
 use num_traits::FromPrimitive;
 
+#[allow(unused_imports)]
+use defmt::{debug, error, trace, warn, Debug2Format};
+
 pub mod ble_scan;
+pub mod rpm;
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -53,26 +55,14 @@ pub static SETPOINT: Setpoint = Setpoint {
 };
 
 const IO_LOOP_TIME_MS: u64 = 500;
-const RPM_LOOP_TIME_MS: u64 = 100;
+
+//const HIGH_IDLE_RPM: f32 = 1600. / PULLEY_RATIO;
+
 
 #[allow(dead_code)]
 pub async fn read_adc(adc: &mut AdcDriverType) {
     let r = adc.read_oneshot().await;
     PROCESS_DATA.bat_voltage.store(r as f32, Ordering::SeqCst);
-}
-
-pub async fn read_rpm(pcnt_driver: &mut PcntDriver) {
-    const POLE_PAIRS: f32 = 6.;
-    const LOOP_DELAY_MS: u64 = 100;
-    const PULLEY_RATIO: f32 = 53.7 / 128.2;
-
-    let pulse_count = pcnt_driver.get_and_reset();
-    let rpm = pulse_count as f32
-        * 60.                            // Hz -> rpm
-        * (1./POLE_PAIRS/2.)            // 6 pole pairs, 2 imp per rev
-        * (1000./LOOP_DELAY_MS as f32)   // interval
-        * PULLEY_RATIO; // belt ratio
-    PROCESS_DATA.rpm.store(rpm, Ordering::SeqCst);
 }
 
 pub async fn read_pps(pps: &mut PpsDriver) {
@@ -139,13 +129,5 @@ pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
     }
 }
 
-#[embassy_executor::task]
-pub async fn rpm_task(mut pcnt_driver: PcntDriver) -> ! {
-    // owned here forever
-    let pcnt_driver = &mut pcnt_driver;
-    let mut ticker = Ticker::every(Duration::from_millis(RPM_LOOP_TIME_MS));
-    loop {
-        read_rpm(pcnt_driver).await;
-        ticker.next().await;
-    }
-}
+
+
