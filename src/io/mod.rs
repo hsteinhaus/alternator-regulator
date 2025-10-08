@@ -113,9 +113,8 @@ pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
 }
 
 #[embassy_executor::task]
-pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
+pub async fn io_task( mut pps: PpsDriver) -> ! {
     // owned here forever
-    let _adc = &mut adc;
     let pps = &mut pps;
     let mut ticker = Ticker::every(Duration::from_millis(IO_LOOP_TIME_MS));
     loop {

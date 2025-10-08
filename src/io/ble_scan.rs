@@ -7,6 +7,7 @@ use embassy_futures::join::join;
 use embassy_time::{Duration, Timer};
 use trouble_host::prelude::*;
 use victron_ble::DeviceState;
+use crate::board::driver::wifi_ble::BleControllerType;
 
 /// Max number of connections
 const CONNECTIONS_MAX: usize = 3;
@@ -160,7 +161,6 @@ impl EventHandler for VictronBLE {
 }
 
 #[embassy_executor::task]
-pub async fn ble_scan_task(transport: esp_wifi::ble::controller::BleConnector<'static>) {
-    let controller = ExternalController::<_, 20>::new(transport);
+pub async fn ble_scan_task(controller: BleControllerType) {
     run(controller).await;
 }
