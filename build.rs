@@ -15,6 +15,12 @@ fn compile_lvgl_inline_wrappers() {
     cfg.compiler("xtensa-esp32-elf-gcc")
         .include("./lvgl_rust_sys/lvgl")
         .file("/tmp/bindgen/extern.c")
+        .flag("-Ofast")
+        .flag("-flto")
+        .flag("-ftree-vectorize")
+        .flag("-fno-strict-aliasing")
+        .flag("-fdata-sections")
+        .flag("-ffunction-sections")
         .compile("lvgl-inline-wrappers");
     println!(
         "cargo:info=Building for target {:?} using compiler {:?}",
@@ -25,12 +31,19 @@ fn compile_lvgl_inline_wrappers() {
 
 fn cmake_lvgl() {
     let dst = Config::new("lvgl_rust_sys/lvgl")
+        .profile("Release")
         .define("CMAKE_C_COMPILER", "xtensa-esp32-elf-gcc")
         .define("CMAKE_CXX_COMPILER", "xtensa-esp32-elf-g++")
         .define("CMAKE_C_COMPILER_ID", "gnu")
         .define("CMAKE_CXX_COMPILER_ID", "gnu")
         .cflag("-mlongcalls")
-        .cflag("-fkeep-inline-functions")
+        .cflag("-Ofast")
+        .cflag("-flto")
+        .cflag("-ftree-vectorize")
+        .cflag("-fno-strict-aliasing")
+        .cflag("-fdata-sections")
+        .cflag("-ffunction-sections")
+//        .cflag("-fkeep-inline-functions")
         .build();
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
