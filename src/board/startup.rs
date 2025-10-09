@@ -22,6 +22,7 @@ use esp_hal::{
     timer::{timg::TimerGroup, AnyTimer},
 };
 use esp_hal::rng::Rng;
+use crate::util::led_debug::LedDebug;
 
 #[allow(dead_code)]
 pub struct Resources<'a> {
@@ -55,6 +56,9 @@ impl <'a> Resources<'a> {
         /////////////////////////// GPIO init ////////////////////////////
         let led0 = Output::new(peripherals.GPIO12, Level::Low, OutputConfig::default());
         let led1 = Output::new(peripherals.GPIO15, Level::Low, OutputConfig::default());
+        let led2 = Output::new(peripherals.GPIO13, Level::Low, OutputConfig::default());
+        LedDebug::create(led2);
+
         let rng = Rng::new(peripherals.RNG);
 
         let button_left = Input::new(peripherals.GPIO39, InputConfig::default().with_pull(Pull::Up));
