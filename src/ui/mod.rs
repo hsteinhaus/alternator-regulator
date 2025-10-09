@@ -3,19 +3,19 @@ mod lvgl_buffers;
 
 use core::ffi::{c_char, c_void, CStr};
 use defmt::warn;
-use embassy_time::{Duration, Ticker};
+use embassy_time::{Duration, Instant, Timer};
 use static_cell::StaticCell;
 
 use lvgl_rust_sys::{
     lv_align_t, lv_init, lv_log_register_print_cb, lv_obj_set_style_pad_bottom, lv_obj_set_style_pad_left,
-    lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act, lv_text_align_t, lv_tick_inc, lv_timer_handler,
-    LV_ALIGN_RIGHT_MID, LV_DISP_DEF_REFR_PERIOD, LV_TEXT_ALIGN_RIGHT,
+    lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act, lv_text_align_t, lv_timer_handler,
+    LV_ALIGN_RIGHT_MID, LV_TEXT_ALIGN_RIGHT,
 };
-
 use crate::board::driver::display::DisplayDriver;
-use crate::io::PROCESS_DATA;
+use crate::io::{PROCESS_DATA};
 use crate::ui::lvgl::{Bar, Label, Meter, Widget};
 use crate::ui::lvgl_buffers::lvgl_disp_init;
+use crate::util::led_debug::LedDebug;
 
 #[allow(unused)]
 #[derive(Debug, Default)]
@@ -29,9 +29,17 @@ struct Widgets {
 
 static WIDGETS: StaticCell<Widgets> = StaticCell::new();
 
+#[no_mangle]
 unsafe extern "C" fn lvgl_log_print(c_str: *const c_char) {
     let text = unsafe { CStr::from_ptr(c_str) };
     warn!("LVGL: {}", text.to_str().unwrap());
+}
+
+#[no_mangle]
+#[link_section = ".iram1"]
+pub extern "C" fn get_tick_ms() -> u32 {
+    let ms = Instant::now().as_millis() as u32;
+    ms
 }
 
 impl Widgets {
@@ -83,17 +91,21 @@ impl Widgets {
         let current = PROCESS_DATA.bat_current.load(core::sync::atomic::Ordering::Relaxed);
         let field_voltage = PROCESS_DATA.field_voltage.load(core::sync::atomic::Ordering::Relaxed);
         let field_current = PROCESS_DATA.field_current.load(core::sync::atomic::Ordering::Relaxed);
+        // let field_voltage = SETPOINT.field_voltage_limit.load(core::sync::atomic::Ordering::Relaxed);
+        // let field_current = SETPOINT.field_current_limit.load(core::sync::atomic::Ordering::Relaxed);
 
         self.meter.set_value(current)?;
-        self.field_voltage_bar.set_value(field_voltage)?;
-        self.field_voltage_label.set_value(field_voltage)?;
-        self.field_current_bar.set_value(field_current)?;
-        self.field_current_label.set_value(field_current)?;
+        if field_voltage.is_finite() {
+            self.field_voltage_bar.set_value(field_voltage)?;
+            self.field_voltage_label.set_value(field_voltage)?;
+        }
+        if field_current.is_finite() {
+            self.field_current_bar.set_value(field_current)?;
+            self.field_current_label.set_value(field_current)?;
+        }
         Ok(())
     }
 }
-
-const LVGL_LOOP_TIME_MS: u64 = 5*LV_DISP_DEF_REFR_PERIOD as u64;
 
 #[embassy_executor::task]
 pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
@@ -110,14 +122,14 @@ pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
         // UI loop
         lv_timer_handler(); // first rendering takes a long time, so do it once befor turing on the backlight
         display_driver.bl_on();
-        let mut ticker = Ticker::every(Duration::from_millis(LVGL_LOOP_TIME_MS));
         loop {
             widgets
                 .update()
                 .unwrap_or_else(|e| warn!("Failed to update widgets: {:?}", e));
-            lv_tick_inc(LVGL_LOOP_TIME_MS as u32);
+            LedDebug::begin();
             lv_timer_handler();
-            ticker.next().await;
+            LedDebug::end();
+            Timer::after(Duration::from_millis(100)).await;
         }
     }
 }

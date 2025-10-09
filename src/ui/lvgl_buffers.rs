@@ -45,6 +45,8 @@ pub fn lvgl_disp_init(user_data: *mut core::ffi::c_void) {
 }
 
 // void my_disp_flush( lv_disp_drv_t *disp_drv, const lv_area_t *area, lv_color_t *color_p )
+#[inline(always)]
+#[link_section = ".iram1"]
 unsafe extern "C" fn flush_cb(disp_drv_p: *mut lv_disp_drv_t, area_p: *const lv_area_t, color_p: *mut lv_color_t) {
     if let Some(disp_drv) = disp_drv_p.as_mut() {
         if let Some(area) = area_p.as_ref() {
@@ -53,7 +55,7 @@ unsafe extern "C" fn flush_cb(disp_drv_p: *mut lv_disp_drv_t, area_p: *const lv_
             let r = Rectangle::with_corners(p1, p2);
             let w = r.size.width;
             let h = r.size.height;
-            debug!("Flushing {}..{}", p1, p2);
+            debug!("Flushing {} x {}", w, h);
             if let Some(display) = (disp_drv.user_data as *mut DisplayDriver).as_mut() {
                 if !color_p.is_null() {
                     let color_p = color_p as *const Rgb565;
