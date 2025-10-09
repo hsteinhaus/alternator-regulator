@@ -118,6 +118,7 @@ impl EventHandler for VictronBLE {
         info!("vendor: {:?}", vendor);
     }
 
+    #[link_section = ".iram1"]
     fn on_adv_reports(&self, mut it: LeAdvReportsIter<'_>) {
         while let Some(Ok(report)) = it.next() {
             if report.addr != self.paired_mac {
