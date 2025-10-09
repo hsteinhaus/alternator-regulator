@@ -3,7 +3,7 @@ use defmt::debug;
 use embassy_time::{Duration, Ticker};
 
 use crate::board::driver::pcnt::PcntDriver;
-use crate::io::PROCESS_DATA;
+use crate::io::{ProcessData, PROCESS_DATA};
 use crate::state::{RegulatorEvent, RpmEvent, SenderType};
 use crate::util::zc::detect_zero_crossing_with_hysteresis;
 
@@ -41,5 +41,11 @@ pub async fn rpm_task(sender: SenderType, mut pcnt_driver: PcntDriver) -> ! {
             debug!("sending rpm event: {:?}", event);
         }
         ticker.next().await;
+    }
+}
+
+impl ProcessData {
+    pub fn rpm_is_normal(&self) -> bool {
+        self.rpm.load(Ordering::SeqCst) > LOW_RPM_THRESHOLD
     }
 }

@@ -4,7 +4,7 @@ runner = "espflash flash --monitor --chip esp32 --log-format defmt --baud 100000
 [env]
 ESP_LOG="info"
 #DEFMT_LOG="info,altreg_fire27_rs::io=debug"
-DEFMT_LOG="info,altreg_fire27_rs::state=debug"
+DEFMT_LOG="info,altreg_fire27_rs::state=debug,altreg_fire27_rs::control=debug"
 DEP_LV_CONFIG_PATH={ value = "./lvgl_rust_sys/lvgl", relative = true }
 ESP_HAL_CONFIG_PLACE_SPI_MASTER_DRIVER_IN_RAM="true"
 

@@ -4,13 +4,11 @@ pub mod regulator_mode;
 use defmt::{debug, error, Format};
 
 use async_button::{Button, ButtonEvent as AsyncButtonEvent};
-use defmt::info;
 use embassy_futures::select::{select3, Either3};
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex,
     channel::{Channel, Receiver, Sender},
 };
-use embassy_time::{Duration, Ticker};
 use esp_hal::gpio::Input;
 use static_cell::StaticCell;
 
@@ -58,16 +56,6 @@ type ChannelType = Channel<CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
 pub fn prepare_channel() -> &'static mut ChannelType {
     static EVENT_CHANNEL: StaticCell<ChannelType> = StaticCell::new();
     EVENT_CHANNEL.init(Channel::new())
-}
-
-#[embassy_executor::task]
-pub async fn state_task(receiver: ReceiverType) -> ! {
-    let mut ticker = Ticker::every(Duration::from_millis(100));
-    loop {
-        let evt = receiver.receive().await;
-        info!("received event: {:?}", evt);
-        ticker.next().await;
-    }
 }
 
 #[embassy_executor::task]

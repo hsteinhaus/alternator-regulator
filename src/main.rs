@@ -84,7 +84,7 @@ fn main() -> ! {
                     spawner_app.must_spawn(state::button_task(button_sender, res.button_left, res.button_center, res.button_right));
                     spawner_app.must_spawn(rpm_task(rpm_sender, res.pcnt));
                     spawner_app.must_spawn(app_main(res.rng));
-                    spawner_app.must_spawn(regulator_mode_task());
+                    spawner_app.must_spawn(regulator_mode_task(receiver));
                 },CpuLoadHooks {
                     core_id: 1,
                     led_pin: res.led1,
@@ -100,7 +100,7 @@ fn main() -> ! {
             spawner_pro.must_spawn(ble_scan_task(res.wifi_ble.ble_connector));
             spawner_pro.must_spawn(ui_task(res.display));
             spawner_pro.must_spawn(io_task(res.adc, res.pps));
-            spawner_pro.must_spawn(state::state_task(receiver));
+//            spawner_pro.must_spawn(state::state_task(receiver));
             spawner_pro.must_spawn(pro_main());
         }, CpuLoadHooks {
             core_id: 0,
