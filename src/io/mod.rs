@@ -58,7 +58,6 @@ const IO_LOOP_TIME_MS: u64 = 500;
 
 //const HIGH_IDLE_RPM: f32 = 1600. / PULLEY_RATIO;
 
-
 #[allow(dead_code)]
 pub async fn read_adc(adc: &mut AdcDriverType) {
     let r = adc.read_oneshot().await;
@@ -66,15 +65,18 @@ pub async fn read_adc(adc: &mut AdcDriverType) {
 }
 
 pub async fn read_pps(pps: &mut PpsDriver) {
-    let v_field = pps.get_voltage().unwrap_or(f32::NAN);
-    let i_field = pps.get_current().unwrap_or(f32::NAN);
-    let temp = pps.get_temperature().unwrap_or(f32::NAN);
-    let running_mode = pps.get_running_mode().unwrap_or(RunningMode::Unknown);
-
-    PROCESS_DATA.field_current.store(i_field, Ordering::SeqCst);
-    PROCESS_DATA.field_voltage.store(v_field, Ordering::SeqCst);
-    PROCESS_DATA.pps_temperature.store(temp, Ordering::SeqCst);
-    PROCESS_DATA.pps_mode.store(running_mode as u8, Ordering::SeqCst);
+    pps.get_voltage()
+        .and_then(|v| Ok(PROCESS_DATA.field_voltage.store(v, Ordering::SeqCst)))
+        .ok();
+    pps.get_current()
+        .and_then(|i| Ok(PROCESS_DATA.field_current.store(i, Ordering::SeqCst)))
+        .ok();
+    pps.get_temperature()
+        .and_then(|t| Ok(PROCESS_DATA.pps_temperature.store(t, Ordering::SeqCst)))
+        .ok();
+    pps.get_running_mode()
+        .and_then(|m| Ok(PROCESS_DATA.pps_mode.store(m as u8, Ordering::SeqCst)))
+        .ok();
 }
 
 pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
@@ -112,7 +114,7 @@ pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
         let loop_start = Instant::now();
         trace!("process_data: {:?}", Debug2Format(&PROCESS_DATA));
         trace!("setpoint: {:?}", Debug2Format(&SETPOINT));
-        with_timeout(Duration::from_millis(IO_LOOP_TIME_MS*3), async {
+        with_timeout(Duration::from_millis(IO_LOOP_TIME_MS * 3), async {
             write_pps(pps)
                 .await
                 .unwrap_or_else(|e| warn!("PPS write error: {:?}", e));
@@ -128,6 +130,3 @@ pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
         ticker.next().await;
     }
 }
-
-
-
