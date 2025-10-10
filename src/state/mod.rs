@@ -1,8 +1,3 @@
-pub mod regulator_mode;
-
-#[allow(unused_imports)]
-use defmt::{debug, error, Format};
-
 use async_button::{Button, ButtonEvent as AsyncButtonEvent};
 use embassy_futures::select::{select3, Either3};
 use embassy_sync::{
@@ -12,8 +7,12 @@ use embassy_sync::{
 use esp_hal::gpio::Input;
 use static_cell::StaticCell;
 
+pub mod regulator_mode;
+
+
 #[allow(unused)]
-#[derive(Copy, Clone, Debug, Format)]
+#[derive(Copy, Clone, Debug,)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum TemperatureEvent {
     Normal,
     Warning,
@@ -21,7 +20,8 @@ pub enum TemperatureEvent {
 }
 
 #[allow(unused)]
-#[derive(Copy, Clone, Debug, Format)]
+#[derive(Copy, Clone, Debug,)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RpmEvent {
     Low,
     HighIdle,
@@ -29,7 +29,8 @@ pub enum RpmEvent {
 }
 
 #[allow(unused)]
-#[derive(Copy, Clone, Debug, Format)]
+#[derive(Copy, Clone, Debug,)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ButtonEvent {
     DecShort(usize),
     DecLong,
@@ -40,7 +41,8 @@ pub enum ButtonEvent {
 }
 
 #[allow(unused)]
-#[derive(Copy, Clone, Debug, Format)]
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RegulatorEvent {
     Rpm(RpmEvent),
     Button(ButtonEvent),

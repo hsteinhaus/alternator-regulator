@@ -1,7 +1,7 @@
 use super::ReceiverType;
 use crate::io::PROCESS_DATA;
 use crate::state::{ButtonEvent, RegulatorEvent, RpmEvent};
-use defmt::{debug, trace, Format};
+
 use static_cell::make_static;
 use statig::prelude::*;
 use crate::control::{dec_current, inc_current, start_charging, stop_charging};
@@ -11,8 +11,8 @@ pub struct RegulatorMode;
 
 #[state_machine(
     initial = "State::off()",
-    state(derive(Debug, Format)),
-    superstate(derive(Debug, Format)),
+    state(derive(Debug, )),
+    superstate(derive(Debug, )),
     before_transition = "Self::before_transition"
 )]
 impl RegulatorMode {

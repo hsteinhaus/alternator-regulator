@@ -2,7 +2,6 @@ use crate::board::driver::display::DisplayDriver;
 use core::ffi::c_void;
 use core::mem::MaybeUninit;
 use core::ptr::addr_of_mut;
-use defmt::{debug, warn};
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;

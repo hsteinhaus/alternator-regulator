@@ -1,8 +1,4 @@
-// Unfortunately, the official lvgl-rs crate is a big mess ATM.
-// This unsafe and probably also unsound hack is at least working...
-
 use core::ffi::c_char;
-use defmt::Format;
 use heapless::{format, String, CString};
 use lvgl_rust_sys::*;
 use thiserror_no_std::Error;
@@ -13,7 +9,8 @@ pub enum Error {
     FormatError(#[from]core::fmt::Error),
 }
 
-impl Format for Error {
+#[cfg(feature = "defmt")]
+impl defmt::Format for Error {
     fn format(&self, f: defmt::Formatter) {
         match self {
             Error::FormatError(_) => defmt::write!(f, "FormatError"),

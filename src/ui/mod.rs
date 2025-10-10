@@ -1,8 +1,4 @@
-mod lvgl;
-mod lvgl_buffers;
-
 use core::ffi::{c_char, c_void, CStr};
-use defmt::warn;
 use embassy_time::{Duration, Instant, Timer};
 use static_cell::StaticCell;
 
@@ -16,6 +12,11 @@ use crate::io::{PROCESS_DATA};
 use crate::ui::lvgl::{Bar, Label, Meter, Widget};
 use crate::ui::lvgl_buffers::lvgl_disp_init;
 use crate::util::led_debug::LedDebug;
+
+
+mod lvgl;
+mod lvgl_buffers;
+
 
 #[allow(unused)]
 #[derive(Debug, Default)]

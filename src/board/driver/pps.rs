@@ -1,4 +1,3 @@
-use defmt::{Format};
 use embedded_hal::i2c::{Error as I2cError, ErrorKind as I2cErrorKind};
 use esp_hal::i2c::master::I2c;
 use esp_hal::Async;
@@ -6,7 +5,8 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
 #[allow(dead_code)]
-#[derive(Clone, Copy, Debug, Format)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Clone, Copy, Debug)]
 pub enum Error {
     /// some other error
     Unknown,
@@ -49,7 +49,8 @@ enum ReadCommand {
 }
 
 #[repr(u8)]
-#[derive(FromPrimitive, ToPrimitive, Format, Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
 pub enum RunningMode {
     Off = 0,
     Voltage = 1,
@@ -59,7 +60,8 @@ pub enum RunningMode {
 }
 
 #[repr(u8)]
-#[derive(FromPrimitive, ToPrimitive, Format, Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
 pub enum SetMode {
     Off = 0,
     On = 1,

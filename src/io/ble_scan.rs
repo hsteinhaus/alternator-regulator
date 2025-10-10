@@ -1,12 +1,12 @@
-use crate::io::PROCESS_DATA;
 use bt_hci::cmd::le::LeSetScanParams;
 use bt_hci::controller::ControllerCmdSync;
 use bt_hci::event::Vendor;
-use defmt::{debug, error, info, warn, Debug2Format};
 use embassy_futures::join::join;
 use embassy_time::{Duration, Timer};
 use trouble_host::prelude::*;
 use victron_ble::DeviceState;
+use crate::io::PROCESS_DATA;
+
 
 /// Max number of connections
 const CONNECTIONS_MAX: usize = 3;
@@ -64,7 +64,7 @@ where
         loop {
             let res = scanner.scan(&config).await;
             if let Err(e) = res {
-                error!("scan error: {:?}", Debug2Format(&e));
+                error!("scan error: {:?}", crate::fmt::Debug2Format(&e));
                 break;
             }
             Timer::after(Duration::from_millis(BT_SCAN_INTERVAL)).await;
@@ -104,10 +104,10 @@ impl VictronBLE {
                     }
                     _ => {}
                 }
-                debug!("Victron Data: {:?}", Debug2Format(&device_state));
+                debug!("Victron Data: {:?}", crate::fmt::Debug2Format(&device_state));
             }
             Err(e) => {
-                warn!("Victron Data Error: {:?}", Debug2Format(&e));
+                warn!("Victron Data Error: {:?}", crate::fmt::Debug2Format(&e));
             }
         }
     }
@@ -122,10 +122,7 @@ impl EventHandler for VictronBLE {
     fn on_adv_reports(&self, mut it: LeAdvReportsIter<'_>) {
         while let Some(Ok(report)) = it.next() {
             if report.addr != self.paired_mac {
-                warn!(
-                    "ignoring {:x}, that has unexpectedly passed the scan filter",
-                    report.addr
-                );
+                warn!("ignoring {:?}, that has unexpectedly passed the scan filter", report.addr);
                 continue;
             };
             for ad in AdStructure::decode(report.data) {

@@ -1,5 +1,4 @@
 use core::sync::atomic::Ordering;
-use defmt::debug;
 use embassy_time::{Duration, Ticker};
 
 use crate::board::driver::pcnt::PcntDriver;

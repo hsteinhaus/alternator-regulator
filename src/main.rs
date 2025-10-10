@@ -9,8 +9,10 @@
     holding buffers for the duration of a data transfer."
 )]
 
+// MUST be the first module
+mod fmt;
+
 use core::sync::atomic::Ordering;
-use defmt::{info};
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::{make_static};
@@ -25,18 +27,15 @@ use esp_hal::{
 use esp_hal::rng::Rng;
 use esp_hal_embassy::{Callbacks, Executor};
 
-use board::startup;
-
-use io::{
-    ble_scan::ble_scan_task,
-};
 
 use ui::ui_task;
-use crate::board::driver::pps::SetMode;
-use crate::io::{io_task, rpm::rpm_task, SETPOINT};
+use crate::board::{
+    startup,
+    driver::pps::SetMode,
+};
+use crate::io::{io_task, ble_scan::ble_scan_task, rpm::rpm_task, SETPOINT};
 use crate::state::regulator_mode::regulator_mode_task;
 
-#[allow(dead_code)]
 mod board;
 mod io;
 mod ui;
@@ -64,6 +63,9 @@ impl Callbacks for CpuLoadHooks {
 #[main]
 #[allow(dead_code)]
 fn main() -> ! {
+    #[cfg(feature = "log-04")]
+    esp_println::logger::init_logger(log_04::LevelFilter::Info);
+
     let mut res = startup::Resources::initialize(); // intentionally non-static, compontents are intended to be moved out into the tasks
     info!("Embassy initialized!");
 

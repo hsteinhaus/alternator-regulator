@@ -1,5 +1,3 @@
-use defmt::info;
-
 pub fn start_charging() {
     info!("starting charging");
 }

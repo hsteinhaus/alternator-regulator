@@ -1,19 +1,19 @@
 use embassy_time::{Duration, Timer};
 use esp_hal::analog::adc::{Adc, AdcChannel, AdcConfig, AdcPin, Attenuation, RegisterAccess};
-use esp_hal::{peripherals, Blocking};
 use esp_hal::gpio::AnalogPin;
+use esp_hal::{peripherals, Blocking};
 
 pub type AdcDriverType = AdcDriver<'static, peripherals::ADC2<'static>, peripherals::GPIO26<'static>>;
 
 pub struct AdcDriver<'a, A, G> {
-    pub adc: Adc<'a, A, Blocking >,
+    pub adc: Adc<'a, A, Blocking>,
     pub pin: AdcPin<G, A>,
 }
 
 impl<'a, A, G> AdcDriver<'a, A, G>
 where
     A: RegisterAccess + 'a,
-    G: AdcChannel + AnalogPin + 'a
+    G: AdcChannel + AnalogPin + 'a,
 {
     pub fn initialize(adc1_peripheral: A, analog_pin: G) -> Self {
         let mut adc1_config = AdcConfig::new();
@@ -28,15 +28,11 @@ where
             let nbr: nb::Result<u16, ()> = self.adc.read_oneshot(&mut self.pin);
             Timer::after(Duration::from_millis(100)).await;
             if let Ok(r) = nbr {
-                defmt::info!("instant return from adc: {}", r);
+                info!("instant return from adc: {}", r);
                 return r;
             }
-            defmt::info!("wait for adc");
+            info!("wait for adc");
             Timer::after(Duration::from_millis(100)).await;
         }
-
     }
-
 }
-
-

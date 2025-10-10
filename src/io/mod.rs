@@ -1,12 +1,10 @@
-use crate::board::driver::analog::AdcDriverType;
-use crate::board::driver::pps::{Error as PpsError, PpsDriver, RunningMode, SetMode};
 use atomic_float::AtomicF32;
 use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use embassy_time::{with_timeout, Duration, Instant, Ticker};
 use num_traits::FromPrimitive;
 
-#[allow(unused_imports)]
-use defmt::{debug, error, trace, warn, Debug2Format};
+use crate::board::driver::analog::AdcDriverType;
+use crate::board::driver::pps::{Error as PpsError, PpsDriver, RunningMode, SetMode};
 
 pub mod ble_scan;
 pub mod rpm;
@@ -112,8 +110,8 @@ pub async fn io_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
     let mut ticker = Ticker::every(Duration::from_millis(IO_LOOP_TIME_MS));
     loop {
         let loop_start = Instant::now();
-        trace!("process_data: {:?}", Debug2Format(&PROCESS_DATA));
-        trace!("setpoint: {:?}", Debug2Format(&SETPOINT));
+        trace!("process_data: {:?}", crate::fmt::Debug2Format(&PROCESS_DATA));
+        trace!("setpoint: {:?}", crate::fmt::Debug2Format(&SETPOINT));
         with_timeout(Duration::from_millis(IO_LOOP_TIME_MS * 3), async {
             write_pps(pps)
                 .await

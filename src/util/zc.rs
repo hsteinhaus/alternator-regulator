@@ -1,5 +1,3 @@
-use defmt::debug;
-
 /// Detects zero crossings with hysteresis to prevent noise-induced oscillations.
 ///
 /// # Arguments
