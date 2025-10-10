@@ -13,32 +13,30 @@ bench = false
 
 [dependencies]
 # from esp-hal repo
-esp-alloc           = { path = "esp-hal/esp-alloc", features = ["defmt", "internal-heap-stats"] }
-esp-backtrace       = { path = "esp-hal/esp-backtrace", features = ["esp32", "exception-handler", "panic-handler", "defmt"] }
-esp-println         = { path = "esp-hal/esp-println", features = ["esp32", "defmt-espflash", "timestamp", "critical-section", "uart"], default-features = false }
+esp-alloc           = { path = "esp-hal/esp-alloc", features = ["internal-heap-stats"] }
+esp-backtrace       = { path = "esp-hal/esp-backtrace", features = ["esp32", "exception-handler", "panic-handler"] }
+esp-println         = { path = "esp-hal/esp-println", features = ["esp32", "timestamp", "critical-section", "uart"], default-features = false}
 esp-bootloader-esp-idf = { path = "esp-hal/esp-bootloader-esp-idf", features = ["esp32"] }
-esp-hal             = { path = "esp-hal/esp-hal", features = ["esp32", "defmt", "unstable"] }
-esp-hal-embassy     = { path = "esp-hal/esp-hal-embassy", features = ["esp32", "defmt"] }
-esp-wifi            = { path = "esp-hal/esp-wifi", features = ["esp32", "defmt", "ble", "builtin-scheduler", "coex", "esp-alloc", "wifi", "smoltcp"] }
+esp-hal             = { path = "esp-hal/esp-hal", features = ["esp32","unstable"] }
+esp-hal-embassy     = { path = "esp-hal/esp-hal-embassy", features = ["esp32"] }
+esp-wifi            = { path = "esp-hal/esp-wifi", features = ["esp32", "ble", "builtin-scheduler", "coex", "esp-alloc", "wifi", "smoltcp"] }
 
 # embeded-hal family
-embedded-hal =  { version = "1.0.0", features = ["defmt-03"] }
-embedded-hal-bus = { version = "0.3.0", features = ["async", "defmt-03"] }
-embedded-graphics = { version = "0.8.1", features = ["defmt"] }
+embedded-hal =  { version = "1.0.0", features = [] }
+embedded-hal-bus = { version = "0.3.0", features = ["async", ] }
+embedded-graphics = { version = "0.8.1", features = [] }
 
 # Embassy
-embassy-executor = { version = "0.7.0", features = ["defmt", "nightly"] }
-embassy-sync = { version = "0.7.2", features = ["defmt"] }
-embassy-time = { version = "0.4.0", features = ["defmt"] }
+embassy-executor = { version = "0.7.0", features = ["nightly"] }
+embassy-sync = { version = "0.7.2", features = [] }
+embassy-time = { version = "0.4.0", features = [] }
 embassy-net = { version = "0.7.0", features = [
     "dhcpv4",
-    "defmt",
     "medium-ethernet",
     "tcp",
     "udp",
 ] }
 embassy-futures = "0.1.2"
-#embassy-embedded-hal = { version = "0.5.0", features = ["defmt", "time"] }
 #smoltcp = { version = "0.12.0", default-features = false, features = [
 #    "defmt",
 #    "medium-ethernet",
@@ -55,19 +53,22 @@ embassy-futures = "0.1.2"
 
 # others
 atomic_float = { version = "1.1.0"}
-defmt = "1.0.1"
+defmt = { version = "1.0.1", optional = true }
+log-04 = { package = "log", version = "0.4.28", optional = true }
+cfg-if = "1"
+
 heapless = "0.9.1"
 static_cell = { version = "2.1.1", features = ["nightly"] }
 num-traits = { version="0.2.19", default-features = false }
 num-derive = "0.4.2"
 
-trouble-host = { version="0.2.4", features = ["gatt", "scan", "defmt"] }
+trouble-host = { version="0.2.4", features = ["gatt", "scan"] }
 bt-hci = { version = "0.3.2" }
 victron_ble = { path="victron_ble", default-features = false }
 mipidsi = "0.9.0"
 lvgl_rust_sys = { path = "lvgl_rust_sys", default-features = false }
 nb = "1.1.0"
-async-button = { version = "0.2.0", features = ["defmt"] }
+async-button = { version = "0.2.0" }
 thiserror-no-std = "2.0.2"
 statig = { version = "0.4.1", features = ["async"] }
 
@@ -75,6 +76,52 @@ statig = { version = "0.4.1", features = ["async"] }
 [build-dependencies]
 cmake = "0.1"
 cc = "1.2.38"
+
+[features]
+default = [
+    "log-04",
+#    "defmt",
+]
+
+
+#! ### Logging Feature Flags
+## Enable logging output using version 0.4 of the `log` crate.
+log-04 = [
+    "dep:log-04",
+    "esp-backtrace/colors",
+    "esp-backtrace/println",
+    "esp-println/log-04",
+    "esp-println/colors",
+    "esp-println/timestamp",
+]
+
+## Enable logging output using `defmt` and implement `defmt::Format` on certain types.
+defmt = [
+    "dep:defmt",
+
+    "esp-alloc/defmt",
+    "esp-backtrace/defmt",
+    "esp-println/defmt-espflash",
+    "esp-bootloader-esp-idf/defmt",
+
+    "esp-hal/defmt",
+    "esp-hal-embassy/defmt",
+    "esp-wifi/defmt",
+
+    "embassy-executor/defmt",
+    "embassy-futures/defmt",
+    "embassy-sync/defmt",
+    "embassy-net/defmt",
+    "embassy-futures/defmt",
+
+    "embedded-hal/defmt-03",
+    "embedded-hal-bus/defmt-03",
+    "embedded-graphics/defmt",
+
+    "async-button/defmt",
+    "bt-hci/defmt",
+    "trouble-host/defmt",
+]
 
 [profile.dev]
 # Rust debug is too slow.

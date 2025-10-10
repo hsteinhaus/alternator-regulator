@@ -36,6 +36,7 @@ dependencies = [
  "atomic_float",
  "bt-hci",
  "cc",
+ "cfg-if",
  "cmake",
  "defmt 1.0.1",
  "embassy-executor",
@@ -54,6 +55,7 @@ dependencies = [
  "esp-println",
  "esp-wifi",
  "heapless 0.9.1",
+ "log",
  "lvgl_rust_sys",
  "mipidsi",
  "nb 1.1.0",
@@ -831,6 +833,7 @@ name = "esp-bootloader-esp-idf"
 version = "0.2.0"
 dependencies = [
  "cfg-if",
+ "defmt 1.0.1",
  "document-features",
  "embedded-storage",
  "esp-config",
