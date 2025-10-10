@@ -241,11 +241,7 @@ pub(crate) fn __unwrap_failed(arg: &str, e: impl ::core::fmt::Debug) -> ! {
 #[cold]
 #[inline(never)]
 #[cfg(not(feature = "defmt"))]
-pub(crate) fn __unwrap_failed_with_message(
-    arg: &str,
-    e: impl core::fmt::Debug,
-    msg: impl core::fmt::Display,
-) -> ! {
+pub(crate) fn __unwrap_failed_with_message(arg: &str, e: impl core::fmt::Debug, msg: impl core::fmt::Display) -> ! {
     ::core::panic!("unwrap of `{}` failed: {}: {:?}", arg, msg, e);
 }
 
@@ -332,7 +328,7 @@ impl defmt::Format for Bytes<'_> {
 }
 
 #[cfg(feature = "defmt")]
-pub use defmt::{Debug2Format};
+pub use defmt::Debug2Format;
 
 #[cfg(feature = "log-04")]
 #[allow(unused)]

@@ -1,4 +1,20 @@
 use async_button::{Button, ButtonConfig};
+use embedded_hal_bus::spi::ExclusiveDevice;
+use esp_hal::{
+    clock::CpuClock,
+    delay::Delay,
+    dma::{DmaRxBuf, DmaTxBuf},
+    dma_buffers,
+    gpio::{Input, InputConfig, Level, Output, OutputConfig, Pull},
+    i2c::master::{BusTimeout, Config as I2cConfig, I2c},
+    rng::Rng,
+    spi::master::{Config as SpiConfig, Spi},
+    spi::Mode,
+    system::CpuControl,
+    time::Rate,
+    timer::{timg::TimerGroup, AnyTimer},
+};
+
 use crate::board::driver::{
     analog::{AdcDriver, AdcDriverType},
     display::DisplayDriver,
@@ -6,22 +22,6 @@ use crate::board::driver::{
     pps::PpsDriver,
     wifi_ble::WifiDriver,
 };
-use embedded_hal_bus::spi::ExclusiveDevice;
-use esp_hal::gpio::{Input, InputConfig, Pull};
-use esp_hal::system::CpuControl;
-use esp_hal::{
-    clock::CpuClock,
-    delay::Delay,
-    dma::{DmaRxBuf, DmaTxBuf},
-    dma_buffers,
-    gpio::{Level, Output, OutputConfig},
-    i2c::master::{BusTimeout, Config as I2cConfig, I2c},
-    spi::master::{Config as SpiConfig, Spi},
-    spi::Mode,
-    time::Rate,
-    timer::{timg::TimerGroup, AnyTimer},
-};
-use esp_hal::rng::Rng;
 use crate::util::led_debug::LedDebug;
 
 #[allow(dead_code)]
@@ -40,7 +40,7 @@ pub struct Resources<'a> {
     pub cpu_control: CpuControl<'a>,
 }
 
-impl <'a> Resources<'a> {
+impl<'a> Resources<'a> {
     pub fn initialize() -> Self {
         let var_name = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
         let config = var_name;
@@ -51,7 +51,6 @@ impl <'a> Resources<'a> {
 
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);
-
 
         /////////////////////////// GPIO init ////////////////////////////
         let led0 = Output::new(peripherals.GPIO12, Level::Low, OutputConfig::default());
@@ -77,8 +76,7 @@ impl <'a> Resources<'a> {
         let bl = peripherals.GPIO32;
 
         #[allow(clippy::manual_div_ceil)]
-
-        let (rx_buffer, rx_descriptors, tx_buffer, tx_descriptors) = dma_buffers!( 4092);
+        let (rx_buffer, rx_descriptors, tx_buffer, tx_descriptors) = dma_buffers!(4092);
         let display_dma_channel = peripherals.DMA_SPI2;
         let dma_tx_buf = DmaTxBuf::new(tx_descriptors, tx_buffer).unwrap();
         let dma_rx_buf = DmaRxBuf::new(rx_descriptors, rx_buffer).unwrap();

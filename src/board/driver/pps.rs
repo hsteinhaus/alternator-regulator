@@ -69,8 +69,6 @@ pub enum SetMode {
     DontTouch = 2,
 }
 
-
-
 pub enum ReadResult {
     ModuleId(u16),
     RunningMode(RunningMode),

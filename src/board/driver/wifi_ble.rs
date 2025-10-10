@@ -15,9 +15,7 @@ pub struct WifiDriver {
 
 impl WifiDriver {
     pub fn new(wifi: WIFI<'static>, bt: BT<'static>, timer: AnyTimer<'static>, rng: Rng) -> Self {
-        let wifi_init = make_static!(
-            esp_wifi::init(timer, rng).expect("Failed to initialize WIFI/BLE controller")
-        );
+        let wifi_init = make_static!(esp_wifi::init(timer, rng).expect("Failed to initialize WIFI/BLE controller"));
         let (_wifi_controller, _interfaces) =
             esp_wifi::wifi::new(wifi_init, wifi).expect("Failed to initialize WIFI controller");
         let ble_connector = BleConnector::new(wifi_init, bt);

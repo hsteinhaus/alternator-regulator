@@ -1,12 +1,12 @@
 use core::ffi::c_char;
-use heapless::{format, String, CString};
+use heapless::{format, CString, String};
 use lvgl_rust_sys::*;
 use thiserror_no_std::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("unable to format value")]
-    FormatError(#[from]core::fmt::Error),
+    FormatError(#[from] core::fmt::Error),
 }
 
 #[cfg(feature = "defmt")]
@@ -17,7 +17,6 @@ impl defmt::Format for Error {
         }
     }
 }
-
 
 #[allow(unused)]
 pub trait Widget {
@@ -70,8 +69,7 @@ impl Widget for Meter {
         self.handle
     }
 
-    fn set_value(&mut self, value: f32) -> Result<(), Error>
-    {
+    fn set_value(&mut self, value: f32) -> Result<(), Error> {
         unsafe {
             lv_meter_set_indicator_value(self.handle, self.needle, value as i32);
         }
@@ -205,7 +203,7 @@ impl Widget for Bar {
 
     fn set_value(&mut self, value: f32) -> Result<(), Error> {
         unsafe {
-            lv_bar_set_value(self.handle, (value*10.) as i32, lv_anim_enable_t_LV_ANIM_OFF);
+            lv_bar_set_value(self.handle, (value * 10.) as i32, lv_anim_enable_t_LV_ANIM_OFF);
         }
         Ok(())
     }
@@ -228,7 +226,7 @@ impl Bar {
     }
 
     pub fn range(self, from: f32, to: f32) -> Self {
-        unsafe { lv_bar_set_range(self.handle, (from*10.) as i32, (to*10.) as i32) };
+        unsafe { lv_bar_set_range(self.handle, (from * 10.) as i32, (to * 10.) as i32) };
         self
     }
 
@@ -238,5 +236,4 @@ impl Bar {
         };
         self
     }
-
 }

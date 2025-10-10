@@ -29,7 +29,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c583acf993cf4245c4acb0a2cc2ab1f9cc097de73411bb6d3647ff6af2b1013d"
 
 [[package]]
-name = "altreg-fire27-rs"
+name = "alternator-regulator"
 version = "0.1.0"
 dependencies = [
  "async-button",
@@ -55,6 +55,7 @@ dependencies = [
  "esp-println",
  "esp-wifi",
  "heapless 0.9.1",
+ "libm",
  "log",
  "lvgl_rust_sys",
  "mipidsi",
@@ -1382,6 +1383,12 @@ dependencies = [
  "cfg-if",
  "windows-link",
 ]
+
+[[package]]
+name = "libm"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9fbbcab51052fe104eb5e5d351cf728d30a5be1fe14d9be8a3b097481fb97de"
 
 [[package]]
 name = "linked_list_allocator"

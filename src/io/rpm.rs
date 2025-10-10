@@ -1,8 +1,8 @@
 use core::sync::atomic::Ordering;
 use embassy_time::{Duration, Ticker};
 
+use super::{ProcessData, PROCESS_DATA};
 use crate::board::driver::pcnt::PcntDriver;
-use crate::io::{ProcessData, PROCESS_DATA};
 use crate::state::{RegulatorEvent, RpmEvent, SenderType};
 use crate::util::zc::detect_zero_crossing_with_hysteresis;
 

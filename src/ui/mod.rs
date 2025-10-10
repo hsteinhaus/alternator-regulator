@@ -1,22 +1,20 @@
 use core::ffi::{c_char, c_void, CStr};
 use embassy_time::{Duration, Instant, Timer};
-use static_cell::StaticCell;
-
 use lvgl_rust_sys::{
     lv_align_t, lv_init, lv_log_register_print_cb, lv_obj_set_style_pad_bottom, lv_obj_set_style_pad_left,
     lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act, lv_text_align_t, lv_timer_handler,
     LV_ALIGN_RIGHT_MID, LV_TEXT_ALIGN_RIGHT,
 };
-use crate::board::driver::display::DisplayDriver;
-use crate::io::{PROCESS_DATA};
-use crate::ui::lvgl::{Bar, Label, Meter, Widget};
-use crate::ui::lvgl_buffers::lvgl_disp_init;
-use crate::util::led_debug::LedDebug;
+use static_cell::StaticCell;
 
+use self::lvgl::{Bar, Label, Meter, Widget};
+use self::lvgl_buffers::lvgl_disp_init;
+use crate::board::driver::display::DisplayDriver;
+use crate::io::PROCESS_DATA;
+use crate::util::led_debug::LedDebug;
 
 mod lvgl;
 mod lvgl_buffers;
-
 
 #[allow(unused)]
 #[derive(Debug, Default)]

@@ -1,12 +1,16 @@
-use crate::board::driver::display::DisplayDriver;
 use core::ffi::c_void;
 use core::mem::MaybeUninit;
 use core::ptr::addr_of_mut;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;
-use lvgl_rust_sys::*;
+use lvgl_rust_sys::{
+    lv_area_t, lv_color_t, lv_disp_draw_buf_init, lv_disp_draw_buf_t, lv_disp_drv_init, lv_disp_drv_register,
+    lv_disp_drv_t, lv_disp_flush_ready,
+};
 use static_cell::make_static;
+
+use crate::board::driver::display::DisplayDriver;
 
 const SCREEN_WIDTH: usize = 320;
 const SCREEN_HEIGHT: usize = 240;

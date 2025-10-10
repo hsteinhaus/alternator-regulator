@@ -1,13 +1,12 @@
 use core::fmt::Display;
 use esp_hal::{
     gpio::Input,
-    pcnt::{channel, Pcnt, unit},
+    pcnt::{channel, unit, Pcnt},
     peripherals::PCNT,
 };
 
-
 pub struct PcntDriver {
-    pub pcnt_unit: unit::Unit<'static, 1>
+    pub pcnt_unit: unit::Unit<'static, 1>,
 }
 
 impl PcntDriver {
@@ -50,7 +49,6 @@ impl PcntDriver {
         // Enable interrupts and resume pulse counter unit
         u0.listen();
         u0.resume();
-        Ok(Self {pcnt_unit: u0})
+        Ok(Self { pcnt_unit: u0 })
     }
 }
-

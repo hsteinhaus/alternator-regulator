@@ -9,9 +9,8 @@ use static_cell::StaticCell;
 
 pub mod regulator_mode;
 
-
 #[allow(unused)]
-#[derive(Copy, Clone, Debug,)]
+#[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum TemperatureEvent {
     Normal,
@@ -20,7 +19,7 @@ pub enum TemperatureEvent {
 }
 
 #[allow(unused)]
-#[derive(Copy, Clone, Debug,)]
+#[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RpmEvent {
     Low,
@@ -29,7 +28,7 @@ pub enum RpmEvent {
 }
 
 #[allow(unused)]
-#[derive(Copy, Clone, Debug,)]
+#[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ButtonEvent {
     DecShort(usize),

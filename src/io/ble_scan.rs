@@ -5,8 +5,8 @@ use embassy_futures::join::join;
 use embassy_time::{Duration, Timer};
 use trouble_host::prelude::*;
 use victron_ble::DeviceState;
-use crate::io::PROCESS_DATA;
 
+use super::PROCESS_DATA;
 
 /// Max number of connections
 const CONNECTIONS_MAX: usize = 3;
@@ -20,7 +20,7 @@ const VICTRON_ID: u16 = 0x02e1;
 // const MAC: [u8; 6] = [0xd9_u8, 0xd5_u8, 0x51_u8, 0x59_u8, 0x70_u8, 0x4d_u8];
 // Lader
 const VICTRON_KEY: &[u8] = [
-    0x34_u8, 0xa4_u8, 0x20_u8, 0xf8_u8, 0x6f_u8, 0xa0_u8, 0x37_u8, 0x50_u8,
+    0x34_u8, 0xa4_u8, 0x20_u8, 0xf8_u8, 0x6f_u8, 0xa0_u8, 0x37_u8, 0x50_u8, 
     0x8a_u8, 0x83_u8, 0x47_u8, 0xf6_u8, 0x21_u8, 0x4d_u8, 0xc1_u8, 0xf4_u8,
 ]
 .as_slice();
@@ -122,7 +122,10 @@ impl EventHandler for VictronBLE {
     fn on_adv_reports(&self, mut it: LeAdvReportsIter<'_>) {
         while let Some(Ok(report)) = it.next() {
             if report.addr != self.paired_mac {
-                warn!("ignoring {:?}, that has unexpectedly passed the scan filter", report.addr);
+                warn!(
+                    "ignoring {:?}, that has unexpectedly passed the scan filter",
+                    report.addr
+                );
                 continue;
             };
             for ad in AdStructure::decode(report.data) {

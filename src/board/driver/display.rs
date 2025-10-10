@@ -1,24 +1,15 @@
-use static_cell::StaticCell;
-use embedded_graphics::prelude::*;
 use embedded_graphics::pixelcolor::Rgb565;
+use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle, Triangle};
 use embedded_hal_bus::spi::ExclusiveDevice;
-use esp_hal::{
-    delay::Delay,
-    gpio::Output, Async,
-    spi::master::SpiDmaBus
-};
+use esp_hal::{delay::Delay, gpio::Output, spi::master::SpiDmaBus, Async};
 use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
+use static_cell::StaticCell;
 
 pub type DisplayInterface<'a> = SpiInterface<'a, ExclusiveDevice<SpiDmaBus<'a, Async>, Output<'a>, Delay>, Output<'a>>;
 pub type DisplaySpiDevice<'d> = ExclusiveDevice<SpiDmaBus<'d, Async>, Output<'d>, Delay>;
 
-type D = mipidsi::Display<
-    DisplayInterface<'static>,
-    ILI9342CRgb565,
-    Output<'static>,
->;
-
+type D = mipidsi::Display<DisplayInterface<'static>, ILI9342CRgb565, Output<'static>>;
 
 #[allow(dead_code)]
 pub struct DisplayDriver {
@@ -31,19 +22,24 @@ impl DisplayDriver {
         self.bl_pin.set_high();
     }
 
+    #[allow(dead_code)]
     pub fn bl_off(&mut self) {
         self.bl_pin.set_low();
     }
 }
 
 impl DisplayDriver {
-    pub fn new(spi_device: DisplaySpiDevice<'static>, mut bl: Output<'static>, mut rst: Output<'static>, dc: Output<'static>) -> Self
-    {
-        static BUFFER: StaticCell<[u8;128]> = StaticCell::new();
+    pub fn new(
+        spi_device: DisplaySpiDevice<'static>,
+        mut bl: Output<'static>,
+        mut rst: Output<'static>,
+        dc: Output<'static>,
+    ) -> Self {
+        static BUFFER: StaticCell<[u8; 128]> = StaticCell::new();
         let di_buf: &'static mut [u8] = BUFFER.init([0_u8; 128]);
         let di = SpiInterface::new(spi_device, dc, di_buf);
 
-        bl.set_low();      // avaoid flickering
+        bl.set_low(); // avaoid flickering
         rst.set_high();
         let mut delay = Delay::new();
         static DISPLAY: StaticCell<D> = StaticCell::new();
@@ -54,7 +50,7 @@ impl DisplayDriver {
                 .display_size(320, 240)
                 .reset_pin(rst)
                 .init(&mut delay)
-                .unwrap()
+                .unwrap(),
         );
         display.clear(Rgb565::BLACK).unwrap();
         Self { bl_pin: bl, display }
