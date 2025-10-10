@@ -1,5 +1,6 @@
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
+
 #![no_std]
 #![no_main]
 #![deny(

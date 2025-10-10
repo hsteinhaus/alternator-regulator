@@ -2,7 +2,7 @@ use static_cell::make_static;
 use statig::prelude::*;
 
 use super::ReceiverType;
-use crate::control::{dec_current, inc_current, start_charging, stop_charging};
+use crate::control::CONTROLLER;
 use crate::io::PROCESS_DATA;
 use crate::state::{ButtonEvent, RegulatorEvent, RpmEvent};
 
@@ -53,11 +53,15 @@ impl RegulatorMode {
             },
             RegulatorEvent::Button(button) => match button {
                 ButtonEvent::IncShort(count) => {
-                    inc_current(*count as u32);
+                    CONTROLLER.lock(|c| {
+                        c.borrow_mut().adjust_current(*count as f32);
+                    });
                     Handled
                 }
                 ButtonEvent::DecShort(count) => {
-                    dec_current(*count as u32);
+                    CONTROLLER.lock(|c| {
+                        c.borrow_mut().adjust_current(-((*count) as f32));
+                    });
                     Handled
                 }
                 _ => Handled,
@@ -69,13 +73,17 @@ impl RegulatorMode {
     #[action]
     async fn enter_idle(&mut self) {
         debug!("entering idle state");
-        stop_charging();
+        CONTROLLER.lock(|c| {
+            c.borrow_mut().stop_charging();
+        });
     }
 
     #[action]
     async fn enter_charging(&mut self) {
         debug!("entering charging state");
-        start_charging();
+        CONTROLLER.lock(|c| {
+            c.borrow_mut().start_charging();
+        });
     }
 }
 
