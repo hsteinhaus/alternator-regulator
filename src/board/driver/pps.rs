@@ -140,7 +140,7 @@ impl WriteCommand {
     }
 }
 
-pub(crate) struct PpsDriver {
+pub struct PpsDriver {
     i2c: I2c<'static, Async>,
     address: u8,
 }
