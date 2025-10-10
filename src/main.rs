@@ -1,6 +1,5 @@
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
-
 #![no_std]
 #![no_main]
 #![deny(
@@ -12,10 +11,8 @@
 // MUST be the first module
 mod fmt;
 
+mod app;
 mod board;
-mod control;
-mod io;
-mod state;
 mod ui;
 mod util;
 
@@ -30,11 +27,12 @@ use esp_hal::rng::Rng;
 use esp_hal::{gpio::Output, main, system::Stack};
 use esp_hal_embassy::{Callbacks, Executor};
 
+use app::shared::SETPOINT;
+use app::state::regulator_mode::regulator_mode_task;
+use board::io::button::button_task;
 use board::{driver::pps::SetMode, startup};
-use io::{ble_scan::ble_scan_task, io_task, rpm::rpm_task, SETPOINT};
-use state::regulator_mode::regulator_mode_task;
+use board::io::{ble_scan::ble_scan_task, pps::pps_task, rpm::rpm_task};
 use ui::ui_task;
-
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -62,7 +60,7 @@ fn main() -> ! {
     let mut res = startup::Resources::initialize(); // intentionally non-static, compontents are intended to be moved out into the tasks
     info!("Embassy initialized!");
 
-    let channel = state::prepare_channel();
+    let channel = app::state::prepare_channel();
     let button_sender = channel.sender();
     let rpm_sender = channel.sender();
     let receiver = channel.receiver();
@@ -76,7 +74,7 @@ fn main() -> ! {
             executor_app.run_with_callbacks(
                 |spawner_app| {
                     // spawn FAST tasks on APP core
-                    spawner_app.must_spawn(state::button_task(
+                    spawner_app.must_spawn(button_task(
                         button_sender,
                         res.button_left,
                         res.button_center,
@@ -100,7 +98,7 @@ fn main() -> ! {
         |spawner_pro| {
             spawner_pro.must_spawn(ble_scan_task(res.wifi_ble.ble_connector));
             spawner_pro.must_spawn(ui_task(res.display));
-            spawner_pro.must_spawn(io_task(res.adc, res.pps));
+            spawner_pro.must_spawn(pps_task(res.adc, res.pps));
             //            spawner_pro.must_spawn(state::state_task(receiver));
             spawner_pro.must_spawn(pro_main());
         },

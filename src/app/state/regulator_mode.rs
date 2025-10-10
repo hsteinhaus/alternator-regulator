@@ -2,9 +2,9 @@ use static_cell::make_static;
 use statig::prelude::*;
 
 use super::ReceiverType;
-use crate::control::CONTROLLER;
-use crate::io::PROCESS_DATA;
-use crate::state::{ButtonEvent, RegulatorEvent, RpmEvent};
+use crate::app::shared::CONTROLLER;
+use crate::app::shared::PROCESS_DATA;
+use crate::app::state::{ButtonEvent, RegulatorEvent, RpmEvent};
 
 #[derive(Default)]
 pub struct RegulatorMode;

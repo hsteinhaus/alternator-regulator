@@ -1,5 +1,6 @@
 pub mod driver;
 pub mod startup;
+pub mod io;
 
 esp_bootloader_esp_idf::esp_app_desc!();
 

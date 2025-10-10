@@ -10,7 +10,7 @@ use static_cell::StaticCell;
 use self::lvgl::{Bar, Label, Meter, Widget};
 use self::lvgl_buffers::lvgl_disp_init;
 use crate::board::driver::display::DisplayDriver;
-use crate::io::PROCESS_DATA;
+use crate::app::shared::PROCESS_DATA;
 use crate::util::led_debug::LedDebug;
 
 mod lvgl;

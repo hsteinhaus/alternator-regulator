@@ -1,20 +1,14 @@
-use core::cell::RefCell;
-use core::cmp::{min};
+use core::cmp::min;
 use core::sync::atomic::Ordering;
-use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
-use embassy_sync::blocking_mutex::Mutex;
 use libm::{floorf, fmaxf};
 
-use crate::io::PROCESS_DATA;
-
-pub static CONTROLLER: Mutex<CriticalSectionRawMutex, RefCell<Controller>> =
-    Mutex::new(RefCell::new(Controller::new()));
+use crate::app::shared::PROCESS_DATA;
 
 const RPM_MIN: usize = 1200;
 const RPM_MAX: usize = 4500;
 const RPM_STEP: usize = 100;
 const RPM_ARRAY_SIZE: usize = (RPM_MAX - RPM_MIN) / RPM_STEP;
-const RPM_FACTOR: [f32;RPM_ARRAY_SIZE] = Controller::calc_rpm_factor_array();
+const RPM_FACTOR: [f32; RPM_ARRAY_SIZE] = Controller::calc_rpm_factor_array();
 
 #[derive(Debug)]
 pub struct Controller {
@@ -29,9 +23,9 @@ impl Controller {
 
     fn lookup_rpm_factor(rpm: f32) -> f32 {
         // Normalize RPM to array index (0.0 to RPM_ARRAY_SIZE-1)
-        let rpm = fmaxf((rpm - (RPM_MIN as f32))/(RPM_STEP as f32), 0.);
+        let rpm = fmaxf((rpm - (RPM_MIN as f32)) / (RPM_STEP as f32), 0.);
         let rpm_floor = min(floorf(rpm) as usize, RPM_ARRAY_SIZE - 2);
-        
+
         let f0 = RPM_FACTOR[rpm_floor];
         let f1 = RPM_FACTOR[rpm_floor + 1];
 
@@ -41,7 +35,7 @@ impl Controller {
     }
 
     pub const fn new() -> Self {
-        Self {_last_current: 0.}
+        Self { _last_current: 0. }
     }
 
     pub fn start_charging(&mut self) {
@@ -53,7 +47,10 @@ impl Controller {
     }
 
     pub fn adjust_current(&mut self, increment: f32) {
-        debug!("{}", Controller::lookup_rpm_factor(PROCESS_DATA.rpm.load(Ordering::SeqCst) as f32));
+        debug!(
+            "{}",
+            Controller::lookup_rpm_factor(PROCESS_DATA.rpm.load(Ordering::SeqCst) as f32)
+        );
         info!("increasing current by {} A", (increment as f32) * 0.1);
     }
 }
@@ -64,12 +61,16 @@ mod tests {
 
     #[test]
     fn test_lookup_rpm_factor_min() {
+        error!("TESTING!");
         assert_eq!(Controller::lookup_rpm_factor(RPM_MIN as f32), RPM_FACTOR[0]);
     }
 
     #[test]
     fn test_lookup_rpm_factor_max() {
-        assert_eq!(Controller::lookup_rpm_factor(RPM_MAX as f32), RPM_FACTOR[RPM_ARRAY_SIZE - 1]);
+        assert_eq!(
+            Controller::lookup_rpm_factor(RPM_MAX as f32),
+            RPM_FACTOR[RPM_ARRAY_SIZE - 1]
+        );
     }
 
     #[test]
@@ -86,7 +87,9 @@ mod tests {
 
     #[test]
     fn test_lookup_rpm_factor_above_max() {
-        assert_eq!(Controller::lookup_rpm_factor((RPM_MAX as f32) + 100.0), RPM_FACTOR[RPM_ARRAY_SIZE - 1]);
+        assert_eq!(
+            Controller::lookup_rpm_factor((RPM_MAX as f32) + 100.0),
+            RPM_FACTOR[RPM_ARRAY_SIZE - 1]
+        );
     }
 }
-
