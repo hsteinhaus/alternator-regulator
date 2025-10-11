@@ -32,11 +32,16 @@ fn compile_lvgl_inline_wrappers() {
 
 fn cmake_lvgl() {
     let dst = Config::new("lvgl_rust_sys/lvgl")
-        .profile("Release")
-        .define("CMAKE_C_COMPILER", "xtensa-esp32-elf-gcc")
-        .define("CMAKE_CXX_COMPILER", "xtensa-esp32-elf-g++")
-        .define("CMAKE_C_COMPILER_ID", "gnu")
-        .define("CMAKE_CXX_COMPILER_ID", "gnu")
+        .define("CMAKE_TOOLCHAIN_FILE", "../../toolchain-esp32.cmake")
+        .define("CMAKE_BUILD_TYPE", "Release")
+        .define("CMAKE_VERBOSE_MAKEFILE", "ON")
+        .define("BUILD_SHARED_LIBS", "OFF")
+        .define("LV_LVGL_H_INCLUDE_SIMPLE", "ON")
+        .define("LV_CONF_INCLUDE_SIMPLE", "ON")
+        .define("LV_CONF_PATH", "lv_conf.h")
+        .define("LV_CONF_ERROR_STR", "NULL")
+        .define("LV_CONF_ERROR_INCLUDE_SIMPLE", "ON")
+        .define("LV_CONF_ERROR_THROW", "ON")
         .cflag("-mlongcalls")
         .cflag("-Ofast")
         .cflag("-flto")
@@ -45,6 +50,7 @@ fn cmake_lvgl() {
         .cflag("-fdata-sections")
         .cflag("-ffunction-sections")
 //        .cflag("-fkeep-inline-functions")
+        .profile("Release")
         .build();
 
     println!("cargo:rustc-link-search=native={}/lib", dst.display());
