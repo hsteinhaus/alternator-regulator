@@ -1,11 +1,11 @@
+use atomic_float::AtomicF32;
 use core::cell::RefCell;
 use core::sync::atomic::{AtomicBool, AtomicU8};
-use atomic_float::AtomicF32;
-use embassy_sync::blocking_mutex::Mutex;
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
+use embassy_sync::blocking_mutex::Mutex;
 
-use crate::board::driver::pps::{RunningMode, SetMode};
 use super::control::Controller;
+use crate::board::driver::pps::{RunningMode, SetMode};
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -49,5 +49,9 @@ pub static SETPOINT: Setpoint = Setpoint {
     pps_enabled: AtomicU8::new(SetMode::DontTouch as u8),
     contactor_state: AtomicBool::new(false),
 };
+
 pub static CONTROLLER: Mutex<CriticalSectionRawMutex, RefCell<Controller>> =
     Mutex::new(RefCell::new(Controller::new()));
+pub const RPM_MIN: usize = 1200;
+pub const RPM_MAX: usize = 4500;
+pub const MAX_FIELD_VOLTAGE: f32 = 20.0;

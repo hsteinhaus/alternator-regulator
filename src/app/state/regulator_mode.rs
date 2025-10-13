@@ -54,13 +54,13 @@ impl RegulatorMode {
             RegulatorEvent::Button(button) => match button {
                 ButtonEvent::IncShort(count) => {
                     CONTROLLER.lock(|c| {
-                        c.borrow_mut().adjust_current(*count as f32);
+                        c.borrow_mut().adjust_target_inc(0.1*(*count as f32));
                     });
                     Handled
                 }
                 ButtonEvent::DecShort(count) => {
                     CONTROLLER.lock(|c| {
-                        c.borrow_mut().adjust_current(-((*count) as f32));
+                        c.borrow_mut().adjust_target_inc(-0.1*(*count as f32));
                     });
                     Handled
                 }

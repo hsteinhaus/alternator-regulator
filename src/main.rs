@@ -16,7 +16,6 @@ mod board;
 mod ui;
 mod util;
 
-use core::sync::atomic::Ordering;
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::make_static;
@@ -27,12 +26,12 @@ use esp_hal::rng::Rng;
 use esp_hal::{gpio::Output, main, system::Stack};
 use esp_hal_embassy::{Callbacks, Executor};
 
-use app::shared::SETPOINT;
 use app::state::regulator_mode::regulator_mode_task;
 use board::io::button::button_task;
-use board::{driver::pps::SetMode, startup};
+use board::{startup};
 use board::io::{ble_scan::ble_scan_task, pps::pps_task, rpm::rpm_task};
 use ui::ui_task;
+use crate::app::control::controller_task;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -81,6 +80,7 @@ fn main() -> ! {
                         res.button_right,
                     ));
                     spawner_app.must_spawn(rpm_task(rpm_sender, res.pcnt));
+                    spawner_app.must_spawn(controller_task());
                     spawner_app.must_spawn(app_main(res.rng));
                     spawner_app.must_spawn(regulator_mode_task(receiver));
                 },
@@ -110,19 +110,19 @@ fn main() -> ! {
 }
 
 #[embassy_executor::task]
-async fn app_main(mut rng: Rng) -> ! {
+async fn app_main(_rng: Rng) -> ! {
     info!("Starting app_main");
     Timer::after(Duration::from_millis(5050)).await;
 
     let mut ticker = Ticker::every(Duration::from_millis(1000));
     loop {
-        SETPOINT
-            .field_current_limit
-            .store(rng.random() as f32 / u32::MAX as f32 * 2., Ordering::SeqCst);
-        SETPOINT
-            .field_voltage_limit
-            .store(rng.random() as f32 / u32::MAX as f32 * 20., Ordering::SeqCst);
-        SETPOINT.pps_enabled.store(SetMode::On as u8, Ordering::SeqCst);
+        // SETPOINT
+        //     .field_current_limit
+        //     .store(rng.random() as f32 / u32::MAX as f32 * 2., Ordering::SeqCst);
+        // SETPOINT
+        //     .field_voltage_limit
+        //     .store(rng.random() as f32 / u32::MAX as f32 * 20., Ordering::SeqCst);
+        // SETPOINT.pps_enabled.store(SetMode::On as u8, Ordering::SeqCst);
         ticker.next().await;
     }
 }
