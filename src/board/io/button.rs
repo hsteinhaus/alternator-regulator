@@ -2,7 +2,7 @@ use async_button::{Button, ButtonEvent as AsyncButtonEvent};
 use embassy_futures::select::{select3, Either3};
 use esp_hal::gpio::Input;
 
-use crate::app::state::{ButtonEvent, RegulatorEvent, SenderType};
+use crate::app::statemachine::{ButtonEvent, RegulatorEvent, SenderType};
 
 #[embassy_executor::task]
 pub async fn button_task(

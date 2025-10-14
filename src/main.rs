@@ -26,7 +26,7 @@ use esp_hal::rng::Rng;
 use esp_hal::{gpio::Output, main, system::Stack};
 use esp_hal_embassy::{Callbacks, Executor};
 
-use app::state::regulator_mode::regulator_mode_task;
+use app::statemachine::regulator_mode::regulator_mode_task;
 use board::io::button::button_task;
 use board::{startup};
 use board::io::{ble_scan::ble_scan_task, pps::pps_task, rpm::rpm_task};
@@ -59,7 +59,7 @@ fn main() -> ! {
     let mut res = startup::Resources::initialize(); // intentionally non-static, compontents are intended to be moved out into the tasks
     info!("Embassy initialized!");
 
-    let channel = app::state::prepare_channel();
+    let channel = app::statemachine::prepare_channel();
     let button_sender = channel.sender();
     let rpm_sender = channel.sender();
     let receiver = channel.receiver();

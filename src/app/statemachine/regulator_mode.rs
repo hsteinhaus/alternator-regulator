@@ -4,7 +4,7 @@ use crate::app::control::Controller;
 use super::ReceiverType;
 use crate::app::shared::CONTROLLER;
 use crate::app::shared::PROCESS_DATA;
-use crate::app::state::{ButtonEvent, RegulatorEvent, RpmEvent};
+use crate::app::statemachine::{ButtonEvent, RegulatorEvent, RpmEvent};
 
 #[derive(Default)]
 pub struct RegulatorMode;
