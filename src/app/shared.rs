@@ -3,12 +3,17 @@ use core::cell::RefCell;
 use core::sync::atomic::{AtomicBool, AtomicU8};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::blocking_mutex::Mutex;
+use heapless::String;
 use num_derive::{FromPrimitive, ToPrimitive};
 use super::control::Controller;
 
 
 pub static CONTROLLER: Mutex<CriticalSectionRawMutex, RefCell<Controller>> =
     Mutex::new(RefCell::new(Controller::new()));
+
+pub const RM_LEN: usize = 10;
+pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>>> = Mutex::new(RefCell::new(String::new()));
+
 
 pub const RPM_MIN: usize = 1200;
 pub const RPM_MAX: usize = 4500;

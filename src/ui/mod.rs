@@ -1,5 +1,6 @@
 use core::ffi::{c_char, c_void, CStr};
 use embassy_time::{Duration, Instant, Timer};
+use heapless::String;
 use lvgl_rust_sys::{
     lv_align_t, lv_init, lv_log_register_print_cb, lv_obj_set_style_pad_bottom, lv_obj_set_style_pad_left,
     lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act, lv_text_align_t, lv_timer_handler,
@@ -9,7 +10,7 @@ use static_cell::StaticCell;
 
 use self::lvgl::{Bar, Label, Meter, Widget};
 use self::lvgl_buffers::lvgl_disp_init;
-use crate::app::shared::PROCESS_DATA;
+use crate::app::shared::{PROCESS_DATA, REGULATOR_MODE, RM_LEN};
 use crate::board::driver::display::DisplayDriver;
 use crate::util::led_debug::LedDebug;
 
@@ -18,12 +19,12 @@ mod lvgl_buffers;
 
 #[allow(unused)]
 #[derive(Debug, Default)]
-struct Widgets {
-    meter: Meter,
+struct Widgets<'a> {
+    meter: Meter<'a>,
     field_voltage_bar: Bar,
     field_current_bar: Bar,
-    field_voltage_label: Label,
-    field_current_label: Label,
+    field_voltage_label: Label<'a>,
+    field_current_label: Label<'a>,
 }
 
 static WIDGETS: StaticCell<Widgets> = StaticCell::new();
@@ -41,7 +42,7 @@ pub extern "C" fn get_tick_ms() -> u32 {
     ms
 }
 
-impl Widgets {
+impl<'a> Widgets<'a> {
     fn create() -> Self {
         unsafe {
             lv_obj_set_style_pad_top(lv_scr_act(), 6, 0);
@@ -67,10 +68,10 @@ impl Widgets {
                 .align(LV_ALIGN_RIGHT_MID as lv_align_t, 0, 0);
 
         // Create labels for field voltage and current
-        let field_voltage_label = Label::new(screen);
+        let field_voltage_label = Label::new(screen, "V");
         field_voltage_label.x(18).text("1.3V");
 
-        let field_current_label = Label::new(screen);
+        let field_current_label = Label::new(screen, "A");
         field_current_label
             .x(228)
             .width(50)
@@ -102,6 +103,12 @@ impl Widgets {
             self.field_current_bar.set_value(field_current)?;
             self.field_current_label.set_value(field_current)?;
         }
+
+        REGULATOR_MODE.lock(|rm| {
+            let rm: &mut String<RM_LEN> = &mut rm.borrow_mut();
+            self.meter.set_state(rm);
+        });
+
         Ok(())
     }
 }

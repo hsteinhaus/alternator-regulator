@@ -1,8 +1,9 @@
+use heapless::{format, String};
 use static_cell::make_static;
 use statig::prelude::*;
 use crate::app::control::Controller;
 use super::ReceiverType;
-use crate::app::shared::CONTROLLER;
+use crate::app::shared::{CONTROLLER, REGULATOR_MODE, RM_LEN};
 use crate::app::shared::PROCESS_DATA;
 use crate::app::statemachine::{ButtonEvent, RegulatorEvent, RpmEvent};
 
@@ -13,7 +14,7 @@ pub struct RegulatorMode;
     initial = "State::off()",
     state(derive(Debug,)),
     superstate(derive(Debug,)),
-    before_transition = "Self::before_transition"
+    after_transition = "Self::after_transition"
 )]
 impl RegulatorMode {
     #[state(entry_action = "enter_off")]
@@ -104,8 +105,14 @@ impl RegulatorMode {
 }
 
 impl RegulatorMode {
-    async fn before_transition(&mut self, source: &State, target: &State, _context: &mut ()) {
-        trace!("before transitioned from `{:?}` to `{:?}`", source, target);
+    async fn after_transition(&mut self, source: &State, target: &State, _context: &mut ()) {
+        trace!("after_transition: {:?} -> {:?}", source, target);
+        let state_name: String<RM_LEN> = format!("{:?}", target).unwrap();
+        REGULATOR_MODE.lock(|rm| {
+            let rm: &mut String<RM_LEN> = &mut rm.borrow_mut();
+            rm.clear();
+            rm.push_str(&state_name).unwrap();
+        });
     }
 }
 

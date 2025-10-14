@@ -1,5 +1,5 @@
-use defmt::Debug2Format;
 use core::ffi::c_char;
+use defmt::Debug2Format;
 use heapless::{format, CString, String};
 use lvgl_rust_sys::*;
 use thiserror_no_std::Error;
@@ -59,13 +59,14 @@ pub trait Widget {
 }
 
 #[derive(Debug, Default)]
-pub struct Meter {
+pub struct Meter<'a> {
     handle: *mut lv_obj_t,
     needle: *mut lv_meter_indicator_t,
-    current_label: Label,
+    current_label: Label<'a>,
+    state_label: Label<'a>,
 }
 
-impl Widget for Meter {
+impl<'a> Widget for Meter<'a> {
     fn get_handle(&self) -> *mut lv_obj_t {
         self.handle
     }
@@ -74,13 +75,12 @@ impl Widget for Meter {
         unsafe {
             lv_meter_set_indicator_value(self.handle, self.needle, value as i32);
         }
-        let s: String<10> = format!("{:.1}", value)?;
-        self.current_label.text(s.as_str());
+        self.current_label.set_value(value)?;
         Ok(())
     }
 }
 
-impl Meter {
+impl<'a> Meter<'a> {
     pub fn new(parent: *mut lv_obj_t) -> Self {
         unsafe {
             let meter = lv_meter_create(parent);
@@ -94,81 +94,101 @@ impl Meter {
             scale.angle_range = 240;
             scale.rotation = 150;
 
-            let needle = lv_meter_add_needle_line(meter, scale, 5, lv_color_hex(0xff0000), -4);
+            let needle = lv_meter_add_needle_line(meter, scale, 5, lv_color_hex(0xff0000), -4)
+                .as_mut()
+                .unwrap();
 
-            let green_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0x009f00), 10);
-            (*green_arc).start_value = 0;
-            (*green_arc).end_value = 99;
+            let green_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0x009f00), 10)
+                .as_mut()
+                .unwrap();
+            green_arc.start_value = 0;
+            green_arc.end_value = 99;
 
-            let yellow_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0xffff00), 10);
-            (*yellow_arc).start_value = 100;
-            (*yellow_arc).end_value = 119;
+            let yellow_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0xffff00), 10)
+                .as_mut()
+                .unwrap();
+            yellow_arc.start_value = 100;
+            yellow_arc.end_value = 119;
 
-            let red_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0xff0000), 10);
-            (*red_arc).start_value = 120;
-            (*red_arc).end_value = 150;
+            let red_arc = lv_meter_add_arc(meter, scale, 10, lv_color_hex(0xff0000), 10)
+                .as_mut()
+                .unwrap();
+            red_arc.start_value = 120;
+            red_arc.end_value = 150;
 
-            let scale2 = lv_meter_add_scale(meter);
-            (*scale2).min = 0;
-            (*scale2).max = 150;
-            (*scale2).angle_range = 240;
-            (*scale2).rotation = 150;
-            (*scale2).tick_width = 1;
-            (*scale2).tick_cnt = 51;
-            (*scale2).tick_length = 10;
-            (*scale2).tick_color = lv_color_hex(0x000000);
-            (*scale2).tick_major_nth = 5;
-            (*scale2).tick_major_width = 2;
-            (*scale2).tick_major_length = 10;
-            (*scale2).tick_major_color = lv_color_hex(0x404040);
-            (*scale2).label_gap = 10;
+            let scale2 = lv_meter_add_scale(meter).as_mut().unwrap();
+            scale2.min = 0;
+            scale2.max = 150;
+            scale2.angle_range = 240;
+            scale2.rotation = 150;
+            scale2.tick_width = 1;
+            scale2.tick_cnt = 51;
+            scale2.tick_length = 10;
+            scale2.tick_color = lv_color_hex(0x000000);
+            scale2.tick_major_nth = 5;
+            scale2.tick_major_width = 2;
+            scale2.tick_major_length = 10;
+            scale2.tick_major_color = lv_color_hex(0x404040);
+            scale2.label_gap = 10;
 
             lv_obj_set_style_text_font(meter, &lv_font_montserrat_14, 0);
             lv_meter_set_indicator_value(meter, needle, 42);
 
             // Create labels for the meter
-            let current_label = Label::new(meter);
+            let current_label = Label::new(meter, "");
             current_label
                 .text("-.-")
                 .align(LV_ALIGN_CENTER as lv_align_t, 0, 50)
                 .font(&lv_font_montserrat_40);
 
-            let _static_label = Label::new(meter)
+            let _static_label = Label::new(meter, "")
                 .text("Amps")
                 .align(LV_ALIGN_CENTER as lv_align_t, 0, 75)
                 .font(&lv_font_montserrat_14);
+
+            let state_label = Label::new(meter, "");
+            state_label
+                .text("<unknown>")
+                .align(LV_ALIGN_CENTER as lv_align_t, 0, -35);
 
             Meter {
                 handle: meter,
                 current_label,
                 needle,
+                state_label,
             }
         }
+    }
+
+    pub fn set_state(&mut self, state: &str) -> &Self {
+        self.state_label.text(state);
+        self
     }
 }
 
 #[derive(Debug, Default)]
-pub struct Label {
+pub struct Label<'a> {
     handle: *mut lv_obj_t,
+    unit: &'a str,
 }
 
-impl Widget for Label {
+impl<'a> Widget for Label<'a> {
     fn get_handle(&self) -> *mut lv_obj_t {
         self.handle
     }
 
     fn set_value(&mut self, value: f32) -> Result<(), Error> {
-        let s: String<10> = format!("{:.1}", value)?;
+        let s: String<10> = format!("{:.1}{}", value, self.unit)?;
         self.text(s.as_str());
         Ok(())
     }
 }
 
-impl Label {
+impl<'a> Label<'a> {
     /// Creates a new `Label` on the specified parent widget.
-    pub fn new(parent: *mut lv_obj_t) -> Self {
+    pub fn new(parent: *mut lv_obj_t, unit: &'a str) -> Self {
         let handle = unsafe { lv_label_create(parent) };
-        Label { handle }
+        Label { handle, unit }
     }
 
     /// Sets the text of the label.

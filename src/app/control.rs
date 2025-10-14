@@ -89,7 +89,7 @@ impl Controller {
 
         // Linear interpolation between f0 and f1
         let f = f0 + (f1 - f0) * (index_rpm - index_fl as f32);
-        debug!("rpm: {}, f0: {}, f1: {} -> f: {}", rpm, f0, f1, f);
+        debug!("rpm factor lookup: {}, f0: {}, f1: {} -> f: {}", rpm, f0, f1, f);
         f
     }
 
