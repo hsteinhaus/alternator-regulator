@@ -1,3 +1,4 @@
+use defmt::Debug2Format;
 use core::ffi::c_char;
 use heapless::{format, CString, String};
 use lvgl_rust_sys::*;
@@ -5,7 +6,7 @@ use thiserror_no_std::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("unable to format value")]
+    #[error(transparent)]
     FormatError(#[from] core::fmt::Error),
 }
 
@@ -13,7 +14,7 @@ pub enum Error {
 impl defmt::Format for Error {
     fn format(&self, f: defmt::Formatter) {
         match self {
-            Error::FormatError(_) => defmt::write!(f, "FormatError"),
+            Error::FormatError(fe) => defmt::write!(f, "FormatError: {:?}", Debug2Format(&fe)),
         }
     }
 }

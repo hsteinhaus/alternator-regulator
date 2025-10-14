@@ -9,8 +9,8 @@ use static_cell::StaticCell;
 
 use self::lvgl::{Bar, Label, Meter, Widget};
 use self::lvgl_buffers::lvgl_disp_init;
-use crate::board::driver::display::DisplayDriver;
 use crate::app::shared::PROCESS_DATA;
+use crate::board::driver::display::DisplayDriver;
 use crate::util::led_debug::LedDebug;
 
 mod lvgl;
@@ -90,10 +90,10 @@ impl Widgets {
         let current = PROCESS_DATA.bat_current.load(core::sync::atomic::Ordering::Relaxed);
         let field_voltage = PROCESS_DATA.field_voltage.load(core::sync::atomic::Ordering::Relaxed);
         let field_current = PROCESS_DATA.field_current.load(core::sync::atomic::Ordering::Relaxed);
-        // let field_voltage = SETPOINT.field_voltage_limit.load(core::sync::atomic::Ordering::Relaxed);
-        // let field_current = SETPOINT.field_current_limit.load(core::sync::atomic::Ordering::Relaxed);
 
-        self.meter.set_value(current)?;
+        if current.is_finite() {
+            self.meter.set_value(current)?;
+        }
         if field_voltage.is_finite() {
             self.field_voltage_bar.set_value(field_voltage)?;
             self.field_voltage_label.set_value(field_voltage)?;
