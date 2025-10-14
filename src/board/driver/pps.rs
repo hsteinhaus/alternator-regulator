@@ -1,7 +1,7 @@
+use crate::app::shared::PpsRunningMode;
 use embedded_hal::i2c::{Error as I2cError, ErrorKind as I2cErrorKind};
 use esp_hal::i2c::master::I2c;
 use esp_hal::Async;
-use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 
 #[allow(dead_code)]
@@ -48,30 +48,9 @@ enum ReadCommand {
     PsuUidW2,
 }
 
-#[repr(u8)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
-pub enum RunningMode {
-    Off = 0,
-    Voltage = 1,
-    Current = 2,
-    #[default]
-    Unknown = 3,
-}
-
-#[repr(u8)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
-pub enum SetMode {
-    Off = 0,
-    On = 1,
-    #[default]
-    DontTouch = 2,
-}
-
 pub enum ReadResult {
     ModuleId(u16),
-    RunningMode(RunningMode),
+    RunningMode(PpsRunningMode),
     ReadbackVoltage(f32),
     ReadbackCurrent(f32),
     Temperature(f32),
@@ -98,7 +77,7 @@ impl ReadCommand {
         match self {
             ReadCommand::ModuleId => Ok(ReadResult::ModuleId((buffer[1] as u16) << 8 | buffer[0] as u16)),
             ReadCommand::GetRunningMode => Ok(ReadResult::RunningMode(
-                RunningMode::from_u8(buffer[0]).ok_or(Error::Unknown)?,
+                PpsRunningMode::from_u8(buffer[0]).ok_or(Error::Unknown)?,
             )),
             ReadCommand::ReadbackVoltage => Ok(ReadResult::ReadbackVoltage(f32::from_le_bytes(buffer))),
             ReadCommand::ReadbackCurrent => Ok(ReadResult::ReadbackCurrent(f32::from_le_bytes(buffer))),
@@ -109,6 +88,8 @@ impl ReadCommand {
     }
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum WriteCommand {
     ModuleEnable(bool),
     SetVoltage(f32),
@@ -117,6 +98,7 @@ enum WriteCommand {
 
 impl WriteCommand {
     pub fn send<I2C: embedded_hal::i2c::I2c>(self, i2c: &mut I2C, address: u8) -> Result<(), I2C::Error> {
+        debug!("send: {:?} to address 0x{:x}", self, address);
         let mut buffer = [0x0_u8; 5];
         let bytes_to_write = match self {
             WriteCommand::ModuleEnable(enable) => {
@@ -135,7 +117,6 @@ impl WriteCommand {
                 5
             }
         };
-
         i2c.write(address, &buffer[..bytes_to_write])
     }
 }
@@ -169,7 +150,7 @@ impl PpsDriver {
         Ok(self)
     }
 
-    pub fn get_running_mode(&mut self) -> Result<RunningMode, Error> {
+    pub fn get_running_mode(&mut self) -> Result<PpsRunningMode, Error> {
         match ReadCommand::GetRunningMode.receive(&mut self.i2c, self.address)? {
             ReadResult::RunningMode(mode) => Ok(mode),
             _ => Err(Error::ResultInvalid),

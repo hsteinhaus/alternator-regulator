@@ -3,9 +3,37 @@ use core::cell::RefCell;
 use core::sync::atomic::{AtomicBool, AtomicU8};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::blocking_mutex::Mutex;
-
+use num_derive::{FromPrimitive, ToPrimitive};
 use super::control::Controller;
-use crate::board::driver::pps::{RunningMode, SetMode};
+
+
+pub static CONTROLLER: Mutex<CriticalSectionRawMutex, RefCell<Controller>> =
+    Mutex::new(RefCell::new(Controller::new()));
+
+pub const RPM_MIN: usize = 1200;
+pub const RPM_MAX: usize = 4500;
+pub const MAX_FIELD_VOLTAGE: f32 = 20.0;
+
+#[repr(u8)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
+pub enum PpsRunningMode {
+    Off = 0,
+    Voltage = 1,
+    Current = 2,
+    #[default]
+    Unknown = 3,
+}
+
+#[repr(u8)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
+pub enum PpsSetMode {
+    Off = 0,
+    On = 1,
+    #[default]
+    DontTouch = 2,
+}
 
 #[allow(unused)]
 #[derive(Debug)]
@@ -30,7 +58,7 @@ pub static PROCESS_DATA: ProcessData = ProcessData {
     field_voltage: AtomicF32::new(f32::NAN),
     field_current: AtomicF32::new(f32::NAN),
     pps_temperature: AtomicF32::new(f32::NAN),
-    pps_mode: AtomicU8::new(RunningMode::Unknown as u8),
+    pps_mode: AtomicU8::new(PpsRunningMode::Unknown as u8),
     soc: AtomicF32::new(f32::NAN),
 };
 
@@ -44,14 +72,9 @@ pub struct Setpoint {
 }
 
 pub static SETPOINT: Setpoint = Setpoint {
-    field_current_limit: AtomicF32::new(0.),
-    field_voltage_limit: AtomicF32::new(0.),
-    pps_enabled: AtomicU8::new(SetMode::DontTouch as u8),
+    field_current_limit: AtomicF32::new(f32::NAN),
+    field_voltage_limit: AtomicF32::new(f32::NAN),
+    pps_enabled: AtomicU8::new(PpsSetMode::DontTouch as u8),
     contactor_state: AtomicBool::new(false),
 };
 
-pub static CONTROLLER: Mutex<CriticalSectionRawMutex, RefCell<Controller>> =
-    Mutex::new(RefCell::new(Controller::new()));
-pub const RPM_MIN: usize = 1200;
-pub const RPM_MAX: usize = 4500;
-pub const MAX_FIELD_VOLTAGE: f32 = 20.0;

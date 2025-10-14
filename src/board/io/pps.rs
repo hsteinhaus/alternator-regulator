@@ -1,9 +1,9 @@
 use core::sync::atomic::Ordering;
 use embassy_time::{with_timeout, Duration, Instant, Ticker};
 use num_traits::FromPrimitive;
-use crate::app::shared::{PROCESS_DATA, SETPOINT};
+use crate::app::shared::{PpsSetMode, PROCESS_DATA, SETPOINT};
 use crate::board::driver::analog::AdcDriverType;
-use crate::board::driver::pps::{Error as PpsError, PpsDriver, SetMode};
+use crate::board::driver::pps::{Error as PpsError, PpsDriver};
 
 const PPS_LOOP_TIME_MS: u64 = 500;
 
@@ -25,7 +25,7 @@ pub async fn read_pps(pps: &mut PpsDriver) {
 pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
     let cl = SETPOINT.field_current_limit.swap(f32::NAN, Ordering::SeqCst);
     let vl = SETPOINT.field_voltage_limit.swap(f32::NAN, Ordering::SeqCst);
-    let enabled = SetMode::from_u8(SETPOINT.pps_enabled.swap(SetMode::DontTouch as u8, Ordering::SeqCst))
+    let enabled = PpsSetMode::from_u8(SETPOINT.pps_enabled.swap(PpsSetMode::DontTouch as u8, Ordering::SeqCst))
         .ok_or(PpsError::Unsupported)?;
     debug!("write_pps: cl: {:?} vl: {:?} enabled: {:?}", cl, vl, enabled);
 
@@ -36,13 +36,13 @@ pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
         pps.set_voltage(vl)?;
     }
     match enabled {
-        SetMode::Off => {
+        PpsSetMode::Off => {
             pps.enable(false)?;
         }
-        SetMode::On => {
+        PpsSetMode::On => {
             pps.enable(true)?;
         }
-        SetMode::DontTouch => (),
+        PpsSetMode::DontTouch => (),
     };
     Ok(())
 }

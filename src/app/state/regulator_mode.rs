@@ -1,6 +1,6 @@
 use static_cell::make_static;
 use statig::prelude::*;
-
+use crate::app::control::Controller;
 use super::ReceiverType;
 use crate::app::shared::CONTROLLER;
 use crate::app::shared::PROCESS_DATA;
@@ -16,7 +16,7 @@ pub struct RegulatorMode;
     before_transition = "Self::before_transition"
 )]
 impl RegulatorMode {
-    #[state]
+    #[state(entry_action = "enter_off")]
     async fn off(event: &RegulatorEvent) -> Outcome<State> {
         match event {
             RegulatorEvent::Button(button) => match button {
@@ -54,16 +54,21 @@ impl RegulatorMode {
             RegulatorEvent::Button(button) => match button {
                 ButtonEvent::IncShort(count) => {
                     CONTROLLER.lock(|c| {
-                        c.borrow_mut().adjust_target_inc(0.1*(*count as f32));
+                        let c: &mut Controller = &mut c.borrow_mut();
+                        c.adjust_target_inc(0.1*(*count as f32));
                     });
                     Handled
                 }
+
                 ButtonEvent::DecShort(count) => {
                     CONTROLLER.lock(|c| {
-                        c.borrow_mut().adjust_target_inc(-0.1*(*count as f32));
+                        let c: &mut Controller = &mut c.borrow_mut();
+                        c.adjust_target_inc(-0.1*(*count as f32));
                     });
                     Handled
                 }
+                ButtonEvent::OkShort(_) => Transition(State::off()),
+                ButtonEvent::OkLong => Transition(State::off()),
                 _ => Handled,
             },
             _ => Handled,
@@ -74,7 +79,8 @@ impl RegulatorMode {
     async fn enter_idle(&mut self) {
         debug!("entering idle state");
         CONTROLLER.lock(|c| {
-            c.borrow_mut().stop_charging();
+            let c: &mut Controller = &mut c.borrow_mut();
+            c.stop_charging();
         });
     }
 
@@ -82,7 +88,17 @@ impl RegulatorMode {
     async fn enter_charging(&mut self) {
         debug!("entering charging state");
         CONTROLLER.lock(|c| {
-            c.borrow_mut().start_charging();
+            let c: &mut Controller = &mut c.borrow_mut();
+            c.start_charging();
+        });
+    }
+
+    #[action]
+    async fn enter_off(&mut self) {
+        debug!("entering off state");
+        CONTROLLER.lock(|c| {
+            let c: &mut Controller = &mut c.borrow_mut();
+            c.stop_charging();
         });
     }
 }

@@ -1,4 +1,4 @@
-use crate::app::shared::{CONTROLLER, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT};
+use crate::app::shared::{PpsSetMode, CONTROLLER, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT};
 use core::cmp::min;
 use core::sync::atomic::Ordering;
 use embassy_time::{Duration, Ticker};
@@ -15,7 +15,7 @@ pub struct Controller {
 #[allow(unused)]
 impl Controller {
     const RPM_STEP: usize = 100;
-    const RPM_ARRAY_SIZE: usize = (RPM_MAX - RPM_MIN) / Controller::RPM_STEP;
+    const RPM_ARRAY_SIZE: usize = RPM_MAX / Controller::RPM_STEP;
     const RPM_FACTOR: [f32; Controller::RPM_ARRAY_SIZE] = Controller::const_rpm_factor();
     const LOOP_INTERVAL_MS: u64 = 100;
 
@@ -65,46 +65,40 @@ impl Controller {
 
     pub fn start_charging(&mut self) {
         info!("starting charging");
-        self.power_on = true;
-        SETPOINT.pps_enabled.store(1u8, Ordering::SeqCst);
+        SETPOINT.pps_enabled.store(PpsSetMode::On as u8, Ordering::SeqCst);
         SETPOINT.field_voltage_limit.store(MAX_FIELD_VOLTAGE, Ordering::SeqCst);
+        self.power_on = true;
         self.target = 0.1;
     }
 
     pub fn stop_charging(&mut self) {
         info!("stopping charging");
+        SETPOINT.pps_enabled.store(PpsSetMode::Off as u8, Ordering::SeqCst);;
         self.power_on = false;
     }
 
     fn lookup_rpm_factor(rpm: f32) -> f32 {
         // Normalize RPM to array index (0.0 to RPM_ARRAY_SIZE-1)
-        warn!("rpm: {}", rpm);
-        let rpm = rpm - (RPM_MIN as f32); // minus offset
-        let rpm_index = rpm / Controller::RPM_STEP as f32; //
+        let index_rpm = rpm / Controller::RPM_STEP as f32; //
 
-        let rpm_floor = fmaxf(floorf(rpm_index), 0.) as usize; // > 0
-        let rpm_floor = min(rpm_floor, Controller::RPM_ARRAY_SIZE - 2); // < RPM_ARRAY_SIZE - 2
+        let index_fl = fmaxf(floorf(index_rpm), 0.) as usize; // > 0
+        let index_fl_bounded = min(index_fl, Controller::RPM_ARRAY_SIZE - 2); // < RPM_ARRAY_SIZE - 2
 
-        assert!(rpm_floor < Controller::RPM_ARRAY_SIZE);
-        warn!("rpm_floor: {}", rpm_floor);
-        let f0 = Controller::RPM_FACTOR[rpm_floor];
-        let f1 = Controller::RPM_FACTOR[rpm_floor + 1];
-        warn!("f0: {}, f1: {}", f0, f1);
+        let f0 = Controller::RPM_FACTOR[index_fl_bounded];
+        let f1 = Controller::RPM_FACTOR[index_fl_bounded + 1];
 
         // Linear interpolation between f0 and f1
-        let f = f0 + (f1 - f0) * (rpm - rpm_floor as f32);
+        let f = f0 + (f1 - f0) * (index_rpm - index_fl as f32);
+        debug!("rpm: {}, f0: {}, f1: {} -> f: {}", rpm, f0, f1, f);
         f
     }
 
     const fn const_rpm_factor<const SIZE: usize>() -> [f32; SIZE] {
-        // no pow() in const context, so use recursion (computed at compile time, so recursion doesn't hurt)
-        const fn calc_rpm_factor(i: usize) -> f32 {
-            let f = 1. - (Controller::RPM_STEP as f32) / (RPM_MIN as f32); // reduction factor for one RPM step
-            if i == 0 {
-                1.
-            } else {
-                f * calc_rpm_factor(i - 1)
-            }
+
+        // first guess: double RPM, double current
+        const fn calc_rpm_factor(array_index: usize) -> f32 {
+            let rpm_index = RPM_MIN / Controller::RPM_STEP;
+            rpm_index as f32 / array_index as f32
         }
 
         let mut tmp = [0.; SIZE];
