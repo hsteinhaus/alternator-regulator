@@ -114,7 +114,7 @@ impl<'a> Widgets<'a> {
 }
 
 #[embassy_executor::task]
-pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
+pub async fn ui_task(mut display_driver: DisplayDriver<'static>) -> ! {
     unsafe {
         // initialize LVGL
         lv_init();

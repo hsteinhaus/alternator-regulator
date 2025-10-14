@@ -12,12 +12,12 @@ pub type DisplaySpiDevice<'d> = ExclusiveDevice<SpiDmaBus<'d, Async>, Output<'d>
 type D = mipidsi::Display<DisplayInterface<'static>, ILI9342CRgb565, Output<'static>>;
 
 #[allow(dead_code)]
-pub struct DisplayDriver {
-    bl_pin: Output<'static>,
-    pub display: &'static mut D,
+pub struct DisplayDriver<'a>{
+    bl_pin: Output<'a>,
+    pub display: &'a mut D,
 }
 
-impl DisplayDriver {
+impl<'a> DisplayDriver<'a> {
     pub fn bl_on(&mut self) {
         self.bl_pin.set_high();
     }
@@ -28,7 +28,7 @@ impl DisplayDriver {
     }
 }
 
-impl DisplayDriver {
+impl<'a> DisplayDriver<'a> {
     pub fn new(
         spi_device: DisplaySpiDevice<'static>,
         mut bl: Output<'static>,
@@ -82,7 +82,7 @@ impl DisplayDriver {
     }
 }
 
-impl DrawTarget for DisplayDriver {
+impl<'a> DrawTarget for DisplayDriver<'a> {
     type Color = Rgb565;
     type Error = <D as DrawTarget>::Error;
 
@@ -109,7 +109,7 @@ impl DrawTarget for DisplayDriver {
 }
 
 // Ensure we support getting the size of the display
-impl OriginDimensions for DisplayDriver {
+impl<'a> OriginDimensions for DisplayDriver<'a> {
     fn size(&self) -> Size {
         // Forward the size computation to the `display` implementation
         self.display.size()
