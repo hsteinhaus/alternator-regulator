@@ -62,6 +62,19 @@ impl Resources {
         let timer0 = TimerGroup::new(peripherals.TIMG1);
         esp_hal_embassy::init(timer0.timer0);
 
+        ////////////////////////// PPS Module init ////////////////////////////
+        let i2c = I2c::new(
+            peripherals.I2C0,
+            I2cConfig::default()
+                .with_frequency(Rate::from_khz(400))
+                .with_timeout(BusTimeout::BusCycles(20)),
+        )
+            .unwrap()
+            .with_sda(peripherals.GPIO21)
+            .with_scl(peripherals.GPIO22)
+            .into_async();
+        let pps = PpsDriver::new(i2c, 0x35).expect("PPS module init failed");
+
         /////////////////////////// GPIO init ////////////////////////////
         let led0 = Output::new(peripherals.GPIO12, Level::Low, OutputConfig::default());
         let led1 = Output::new(peripherals.GPIO15, Level::Low, OutputConfig::default());
@@ -112,19 +125,6 @@ impl Resources {
         let dc = Output::new(peripherals.GPIO27, Level::Low, OutputConfig::default());
         let rst = Output::new(peripherals.GPIO33, Level::Low, OutputConfig::default());
         let d = DisplayDriver::new(display_spi_device, bl, rst, dc);
-
-        ////////////////////////// PPS Module init ////////////////////////////
-        let i2c = I2c::new(
-            peripherals.I2C0,
-            I2cConfig::default()
-                .with_frequency(Rate::from_khz(400))
-                .with_timeout(BusTimeout::BusCycles(20)),
-        )
-        .unwrap()
-        .with_sda(peripherals.GPIO21)
-        .with_scl(peripherals.GPIO22)
-        .into_async();
-        let pps = PpsDriver::new(i2c, 0x35).expect("PPS module init failed");
 
         ////////////////////////// Pulse counter init ////////////////////////////
         let rpm_pin = Input::new(
