@@ -23,17 +23,17 @@ pub async fn read_pps(pps: &mut PpsDriver) {
 }
 
 pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
-    let cl = SETPOINT.field_current_limit.swap(f32::NAN, Ordering::SeqCst);
-    let vl = SETPOINT.field_voltage_limit.swap(f32::NAN, Ordering::SeqCst);
+    let current_limit = SETPOINT.field_current_limit.swap(f32::NAN, Ordering::SeqCst);
+    let voltage_limit = SETPOINT.field_voltage_limit.swap(f32::NAN, Ordering::SeqCst);
     let enabled = PpsSetMode::from_u8(SETPOINT.pps_enabled.swap(PpsSetMode::DontTouch as u8, Ordering::SeqCst))
         .ok_or(PpsError::Unsupported)?;
-    debug!("write_pps: cl: {:?} vl: {:?} enabled: {:?}", cl, vl, enabled);
+    debug!("write_pps: cl: {:?} vl: {:?} enabled: {:?}", current_limit, voltage_limit, enabled);
 
-    if !cl.is_nan() {
-        pps.set_current(cl)?;
+    if !current_limit.is_nan() {
+        pps.set_current(current_limit)?;
     }
-    if !vl.is_nan() {
-        pps.set_voltage(vl)?;
+    if !voltage_limit.is_nan() {
+        pps.set_voltage(voltage_limit)?;
     }
     match enabled {
         PpsSetMode::Off => {

@@ -105,7 +105,7 @@ impl<'a> Widgets<'a> {
         }
 
         REGULATOR_MODE.lock(|rm| {
-            let rm: &mut String<RM_LEN> = &mut rm.borrow_mut();
+            let rm: &String<RM_LEN> = &rm.borrow();
             self.meter.set_state(rm);
         });
 

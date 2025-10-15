@@ -1,5 +1,5 @@
 use heapless::{format, String};
-use libm::{fmaxf, fmin, fminf};
+use libm::{fmaxf, fminf};
 use static_cell::make_static;
 use statig::prelude::*;
 use crate::app::control::Controller;
