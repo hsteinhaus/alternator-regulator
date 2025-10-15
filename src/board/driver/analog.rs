@@ -3,17 +3,17 @@ use esp_hal::analog::adc::{Adc, AdcChannel, AdcConfig, AdcPin, Attenuation, Regi
 use esp_hal::gpio::AnalogPin;
 use esp_hal::{peripherals, Blocking};
 
-pub type AdcDriverType = AdcDriver<'static, peripherals::ADC2<'static>, peripherals::GPIO26<'static>>;
+pub type AdcDriverType = AdcDriver<peripherals::ADC2<'static>, peripherals::GPIO26<'static>>;
 
-pub struct AdcDriver<'a, A, G> {
-    pub adc: Adc<'a, A, Blocking>,
+pub struct AdcDriver<A, G> {
+    pub adc: Adc<'static, A, Blocking>,
     pub pin: AdcPin<G, A>,
 }
 
-impl<'a, A, G> AdcDriver<'a, A, G>
+impl<A, G> AdcDriver<A, G>
 where
-    A: RegisterAccess + 'a,
-    G: AdcChannel + AnalogPin + 'a,
+    A: RegisterAccess + 'static,
+    G: AdcChannel + AnalogPin + 'static,
 {
     pub fn initialize(adc1_peripheral: A, analog_pin: G) -> Self {
         let mut adc1_config = AdcConfig::new();

@@ -25,22 +25,22 @@ use crate::board::driver::{
 use crate::util::led_debug::LedDebug;
 
 #[allow(dead_code)]
-pub struct Resources<'a> {
-    pub led0: Output<'a>,
-    pub led1: Output<'a>,
-    pub button_left: Button<Input<'a>>,
-    pub button_center: Button<Input<'a>>,
-    pub button_right: Button<Input<'a>>,
+pub struct Resources {
+    pub led0: Output<'static>,
+    pub led1: Output<'static>,
+    pub button_left: Button<Input<'static>>,
+    pub button_center: Button<Input<'static>>,
+    pub button_right: Button<Input<'static>>,
     pub rng: Rng,
     pub display: DisplayDriver,
     pub wifi_ble: WifiDriver,
     pub pps: PpsDriver,
     pub pcnt: PcntDriver,
     pub adc: AdcDriverType,
-    pub cpu_control: CpuControl<'a>,
+    pub cpu_control: CpuControl<'static>,
 }
 
-impl<'a> Resources<'a> {
+impl Resources {
     pub fn initialize() -> Self {
         let var_name = esp_hal::Config::default().with_cpu_clock(CpuClock::max());
         let config = var_name;
