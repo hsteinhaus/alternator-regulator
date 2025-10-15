@@ -14,7 +14,7 @@ bench = false
 [dependencies]
 # from esp-hal repo
 esp-alloc           = { path = "esp-hal/esp-alloc", features = ["internal-heap-stats"] }
-esp-backtrace       = { path = "esp-hal/esp-backtrace", features = ["esp32", "exception-handler", "panic-handler"] }
+esp-backtrace       = { path = "esp-hal/esp-backtrace", features = ["esp32", "exception-handler", "panic-handler", "custom-halt"] }
 esp-println         = { path = "esp-hal/esp-println", features = ["esp32", "timestamp", "critical-section", "uart"], default-features = false}
 esp-bootloader-esp-idf = { path = "esp-hal/esp-bootloader-esp-idf", features = ["esp32"] }
 esp-hal             = { path = "esp-hal/esp-hal", features = ["esp32","unstable"] }
