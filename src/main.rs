@@ -1,5 +1,7 @@
 #![no_std]
 #![no_main]
+
+#![feature(int_from_ascii)]
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
 #![deny(
@@ -32,6 +34,7 @@ use ui::ui_task;
 use app::control::controller_task;
 use app::logger::logger;
 use app::statemachine::regulator_mode::regulator_mode_task;
+use crate::app::statemachine::{RegulatorEvent, SenderType};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -62,6 +65,7 @@ fn main() -> ! {
     let channel = app::statemachine::prepare_channel();
     let button_sender = channel.sender();
     let rpm_sender = channel.sender();
+    let ready_sender = channel.sender();
     let receiver = channel.receiver();
 
     // start APP core executor first, as running the PRO core executor will block
@@ -81,7 +85,7 @@ fn main() -> ! {
                     ));
                     spawner_app.must_spawn(rpm_task(rpm_sender, res.pcnt));
                     spawner_app.must_spawn(controller_task());
-                    spawner_app.must_spawn(app_main());
+                    spawner_app.must_spawn(app_main(ready_sender));
                     spawner_app.must_spawn(regulator_mode_task(receiver));
                 },
                 CpuLoadHooks {
@@ -111,9 +115,10 @@ fn main() -> ! {
 }
 
 #[embassy_executor::task]
-async fn app_main() -> ! {
+async fn app_main(ready_sender: SenderType) -> ! {
     info!("Starting app_main");
-    Timer::after(Duration::from_millis(5050)).await;
+    ready_sender.send(RegulatorEvent::Ready).await;
+    Timer::after(Duration::from_millis(1000)).await;
 
     let mut ticker = Ticker::every(Duration::from_millis(1000));
     loop {

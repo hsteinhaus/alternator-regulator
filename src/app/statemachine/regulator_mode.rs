@@ -1,4 +1,5 @@
 use heapless::{format, String};
+use libm::{fmaxf, fmin, fminf};
 use static_cell::make_static;
 use statig::prelude::*;
 use crate::app::control::Controller;
@@ -11,12 +12,21 @@ use crate::app::statemachine::{ButtonEvent, RegulatorEvent, RpmEvent};
 pub struct RegulatorMode;
 
 #[state_machine(
-    initial = "State::off()",
+    initial = "State::startup()",
     state(derive(Debug,)),
     superstate(derive(Debug,)),
     after_transition = "Self::after_transition"
 )]
 impl RegulatorMode {
+    #[state]
+    async fn startup(event: &RegulatorEvent) -> Outcome<State> {
+        match event {
+            RegulatorEvent::Ready => Transition(State::off()),
+            _ => Handled,
+        }
+    }
+
+
     #[state(entry_action = "enter_off")]
     async fn off(event: &RegulatorEvent) -> Outcome<State> {
         match event {
@@ -56,7 +66,7 @@ impl RegulatorMode {
                 ButtonEvent::IncShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
-                        c.adjust_target_inc(0.1*(*count as f32));
+                        c.adjust_target_inc(fminf(0.1*(*count as f32), 0.));
                     });
                     Handled
                 }
@@ -64,7 +74,7 @@ impl RegulatorMode {
                 ButtonEvent::DecShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
-                        c.adjust_target_inc(-0.1*(*count as f32));
+                        c.adjust_target_inc(fmaxf(-0.1*(*count as f32), 0.));
                     });
                     Handled
                 }

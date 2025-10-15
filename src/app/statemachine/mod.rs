@@ -40,6 +40,7 @@ pub enum ButtonEvent {
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum RegulatorEvent {
+    Ready,
     Rpm(RpmEvent),
     Button(ButtonEvent),
     Temperature(TemperatureEvent),
