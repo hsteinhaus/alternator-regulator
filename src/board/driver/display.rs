@@ -1,14 +1,12 @@
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle, Triangle};
-use embedded_hal_bus::spi::ExclusiveDevice;
-use esp_hal::{delay::Delay, gpio::Output, spi::master::SpiDmaBus, Async};
+use esp_hal::{delay::Delay, gpio::Output};
 use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
 use static_cell::StaticCell;
+use crate::board::startup::SpiDeviceType;
 
-pub type DisplayInterface<'a> = SpiInterface<'a, ExclusiveDevice<SpiDmaBus<'a, Async>, Output<'a>, Delay>, Output<'a>>;
-pub type DisplaySpiDevice<'d> = ExclusiveDevice<SpiDmaBus<'d, Async>, Output<'d>, Delay>;
-
+type DisplayInterface<'a> = SpiInterface<'a, SpiDeviceType, Output<'a>>;
 type D = mipidsi::Display<DisplayInterface<'static>, ILI9342CRgb565, Output<'static>>;
 
 #[allow(dead_code)]
@@ -30,7 +28,7 @@ impl DisplayDriver {
 
 impl DisplayDriver {
     pub fn new(
-        spi_device: DisplaySpiDevice<'static>,
+        spi_device: SpiDeviceType,
         mut bl: Output<'static>,
         mut rst: Output<'static>,
         dc: Output<'static>,

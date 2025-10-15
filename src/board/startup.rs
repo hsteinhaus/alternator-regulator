@@ -24,6 +24,10 @@ use crate::board::driver::{
 };
 use crate::util::led_debug::LedDebug;
 
+
+pub type SpiDeviceType = RefCellDevice<'static, SpiDmaBus<'static, Async>, Output<'static>, Delay>;
+
+
 #[allow(dead_code)]
 pub struct Resources {
     pub led0: Output<'static>,
