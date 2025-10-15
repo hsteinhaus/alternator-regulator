@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
 #![deny(
@@ -21,18 +20,18 @@ use esp_backtrace as _;
 use esp_println as _;
 use static_cell::make_static;
 
+use board::io::button::button_task;
+use board::io::{ble_scan::ble_scan_task, pps::pps_task, rpm::rpm_task};
+use board::startup;
 use embassy_time::{Duration, Ticker, Timer};
 use esp_alloc::HeapStats;
-use esp_hal::rng::Rng;
 use esp_hal::{gpio::Output, main, system::Stack};
 use esp_hal_embassy::{Callbacks, Executor};
-
-use app::statemachine::regulator_mode::regulator_mode_task;
-use board::io::button::button_task;
-use board::{startup};
-use board::io::{ble_scan::ble_scan_task, pps::pps_task, rpm::rpm_task};
 use ui::ui_task;
-use crate::app::control::controller_task;
+
+use app::control::controller_task;
+use app::logger::logger;
+use app::statemachine::regulator_mode::regulator_mode_task;
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -82,7 +81,7 @@ fn main() -> ! {
                     ));
                     spawner_app.must_spawn(rpm_task(rpm_sender, res.pcnt));
                     spawner_app.must_spawn(controller_task());
-                    spawner_app.must_spawn(app_main(res.rng));
+                    spawner_app.must_spawn(app_main());
                     spawner_app.must_spawn(regulator_mode_task(receiver));
                 },
                 CpuLoadHooks {
@@ -101,6 +100,7 @@ fn main() -> ! {
             spawner_pro.must_spawn(ui_task(res.display));
             spawner_pro.must_spawn(pps_task(res.adc, res.pps));
             //            spawner_pro.must_spawn(state::state_task(receiver));
+            spawner_pro.must_spawn(logger(res.sd_card));
             spawner_pro.must_spawn(pro_main());
         },
         CpuLoadHooks {
@@ -111,7 +111,7 @@ fn main() -> ! {
 }
 
 #[embassy_executor::task]
-async fn app_main(_rng: Rng) -> ! {
+async fn app_main() -> ! {
     info!("Starting app_main");
     Timer::after(Duration::from_millis(5050)).await;
 
@@ -131,6 +131,7 @@ async fn app_main(_rng: Rng) -> ! {
 #[embassy_executor::task]
 async fn pro_main() -> () {
     info!("Starting pro_main");
+
     let mut ticker = Ticker::every(Duration::from_millis(60_000));
     loop {
         let stats: HeapStats = esp_alloc::HEAP.stats();
