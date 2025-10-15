@@ -10,6 +10,8 @@
     holding buffers for the duration of a data transfer."
 )]
 
+extern crate alloc;
+
 // MUST be the first module
 mod fmt;
 

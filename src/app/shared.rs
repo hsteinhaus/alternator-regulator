@@ -1,19 +1,19 @@
+use super::control::Controller;
 use atomic_float::AtomicF32;
 use core::cell::RefCell;
-use core::sync::atomic::{AtomicBool, AtomicU8};
+use core::fmt;
+use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::blocking_mutex::Mutex;
 use heapless::String;
 use num_derive::{FromPrimitive, ToPrimitive};
-use super::control::Controller;
-
 
 pub static CONTROLLER: Mutex<CriticalSectionRawMutex, RefCell<Controller>> =
     Mutex::new(RefCell::new(Controller::new()));
 
 pub const RM_LEN: usize = 10;
-pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>>> = Mutex::new(RefCell::new(String::new()));
-
+pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>>> =
+    Mutex::new(RefCell::new(String::new()));
 
 pub const RPM_MIN: usize = 1200;
 pub const RPM_MAX: usize = 4500;
@@ -76,6 +76,7 @@ pub struct Setpoint {
     pub contactor_state: AtomicBool,
 }
 
+#[allow(unused)]
 pub static SETPOINT: Setpoint = Setpoint {
     field_current_limit: AtomicF32::new(f32::NAN),
     field_voltage_limit: AtomicF32::new(f32::NAN),
@@ -83,3 +84,32 @@ pub static SETPOINT: Setpoint = Setpoint {
     contactor_state: AtomicBool::new(false),
 };
 
+impl fmt::Display for ProcessData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{};{};{};{};{};{};{};{}",
+            self.rpm.load(Ordering::Relaxed),
+            self.field_current.load(Ordering::Relaxed),
+            self.field_voltage.load(Ordering::Relaxed),
+            self.bat_current.load(Ordering::Relaxed),
+            self.bat_voltage.load(Ordering::Relaxed),
+            self.temperature.load(Ordering::Relaxed),
+            self.pps_temperature.load(Ordering::Relaxed),
+            self.pps_mode.load(Ordering::Relaxed),
+        )
+    }
+}
+
+impl fmt::Display for Setpoint {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{};{};{};{}",
+            self.field_current_limit.load(Ordering::Relaxed),
+            self.field_voltage_limit.load(Ordering::Relaxed),
+            self.pps_enabled.load(Ordering::Relaxed),
+            self.contactor_state.load(Ordering::Relaxed),
+        )
+    }
+}
