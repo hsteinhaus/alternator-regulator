@@ -32,7 +32,7 @@ where
     let handler = VictronBLE::new();
     let mut scanner = Scanner::new(central);
     let _ = join(runner.run_with_handler(&handler), async {
-        let filter = [(AddrKind::RANDOM, &handler.paired_mac_reverse)];
+        let filter = [(AddrKind::RANDOM, &handler.paired_mac)];
         let config = ScanConfig {
             active: false,
             interval: Duration::from_millis(BT_SCAN_INTERVAL),

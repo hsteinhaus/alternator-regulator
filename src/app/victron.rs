@@ -1,38 +1,62 @@
-use bt_hci::param::{BdAddr, LeAdvReportsIter, LeExtAdvReportsIter};
-use trouble_host::prelude::EventHandler;
 use bt_hci::event::Vendor;
+use bt_hci::param::{BdAddr, LeAdvReportsIter, LeExtAdvReportsIter};
 use trouble_host::advertise::AdStructure;
+use trouble_host::prelude::EventHandler;
 use victron_ble::DeviceState;
+
 use crate::app::shared::PROCESS_DATA;
 
-const VICTRON_ID: u16 = 0x02e1;
-// SmartShunt 500A (Sprinter)
-// const VICTRON_KEY: &[u8] = [0x13_u8, 0xc6_u8, 0xbf_u8, 0xf8_u8, 0xdb_u8, 0xef_u8, 0xcf_u8, 0x2d_u8, 0xd5_u8, 0xd5_u8, 0x07_u8, 0x79_u8, 0x8d_u8, 0xc1_u8, 0x0f_u8, 0x9e_u8].as_slice();
-// const MAC: [u8; 6] = [0xd9_u8, 0xd5_u8, 0x51_u8, 0x59_u8, 0x70_u8, 0x4d_u8];
-// Lader
-pub const VICTRON_KEY: &[u8] = [
-    0x34_u8, 0xa4_u8, 0x20_u8, 0xf8_u8, 0x6f_u8, 0xa0_u8, 0x37_u8, 0x50_u8,
-    0x8a_u8, 0x83_u8, 0x47_u8, 0xf6_u8, 0x21_u8, 0x4d_u8, 0xc1_u8, 0xf4_u8,
-]
-.as_slice();
-const MAC: [u8; 6] = [0xc0_u8, 0x12_u8, 0x9b_u8, 0x97_u8, 0x7f_u8, 0xb8_u8];
-pub const REV_MAC: [u8; 6] = [MAC[5], MAC[4], MAC[3], MAC[2], MAC[1], MAC[0]];
+struct VictronDevice {
+    pub mac: [u8; 6],
+    pub key: [u8; 16],
+}
+
+impl VictronDevice {
+    pub fn bd_addr(&self) -> BdAddr {
+        let mut reversed = [0u8; 6];
+        reversed.copy_from_slice(&self.mac);
+        reversed.reverse();
+        BdAddr::new(reversed)
+    }
+}
 
 pub struct VictronBLE {
-    paired_mac: BdAddr,
     paired_key: &'static [u8],
-    pub paired_mac_reverse: BdAddr,  // needed by I/O code for early filtering
+    pub paired_mac: BdAddr,
 }
 
 impl VictronBLE {
+    const VICTRON_ID: u16 = 0x02e1;
+    const VICTRON_DEVICES: [VictronDevice; 3] = [
+        VictronDevice {
+            // AC Charger - just for SW testing
+            mac: [0xc0, 0x12, 0x9b, 0x97, 0x7f, 0xb8],
+            key: [
+                0x34, 0xa4, 0x20, 0xf8, 0x6f, 0xa0, 0x37, 0x50, 0x8a, 0x83, 0x47, 0xf6, 0x21, 0x4d, 0xc1, 0xf4,
+            ],
+        },
+        VictronDevice {
+            // SmartShunt 300A (alternator)
+            mac: [0xf9, 0x3c, 0xeb, 0x5e, 0xf4, 0x75],
+            key: [
+                0xe8, 0xe4, 0xd8, 0x14, 0x4a, 0x72, 0x49, 0x2e, 0x8e, 0x8b, 0x2b, 0x9c, 0x93, 0x78, 0xbd, 0xfb,
+            ],
+        },
+        VictronDevice {
+            // SmartShunt 500A (battery)
+            mac: [0xd9, 0xd5, 0x51, 0x59, 0x70, 0x4d],
+            key: [
+                0x13, 0xc6, 0xbf, 0xf8, 0xdb, 0xef, 0xcf, 0x2d, 0xd5, 0xd5, 0x07, 0x79, 0x8d, 0xc1, 0x0f, 0x9e,
+            ],
+        },
+    ];
+
     pub fn new() -> Self {
         VictronBLE {
-            paired_key: VICTRON_KEY,
-            paired_mac_reverse: BdAddr::new(REV_MAC),
-            paired_mac: BdAddr::new(REV_MAC),
+            paired_key: &VictronBLE::VICTRON_DEVICES[0].key,
+            paired_mac: VictronBLE::VICTRON_DEVICES[0].bd_addr(),
         }
     }
-
 
     fn handle_mdata(&self, data: &[u8]) {
         let device_state_result = victron_ble::parse_manufacturer_data(data, self.paired_key);
@@ -91,7 +115,7 @@ impl EventHandler for VictronBLE {
                                 company_identifier,
                                 payload,
                             } => {
-                                if company_identifier == VICTRON_ID {
+                                if company_identifier == VictronBLE::VICTRON_ID {
                                     self.handle_mdata(payload);
                                     //warn!("Victron ad: {:?}", payload);
                                 } else {
