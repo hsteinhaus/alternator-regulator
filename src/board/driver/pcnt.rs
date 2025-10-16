@@ -34,11 +34,7 @@ impl PcntDriver {
     pub fn initialize(pcnt: PCNT<'static>, rpm_pin: Input<'static>) -> Result<Self, Error> {
         // Initialize Pulse Counter (PCNT) unit with limits and filter settings
         let pcnt = Pcnt::new(pcnt);
-        //        pcnt.set_interrupt_handler(interrupt_handler);
         let u0 = pcnt.unit1;
-        //        u0.set_low_limit(Some(-100)).expect("set low limit failed");
-        //        u0.set_high_limit(Some(100)).expect("set high limit failed");
-        //        u0.set_filter(Some(min(10u16 * 80, 1023u16))).expect("set filter failed");
         u0.clear();
 
         // Set up channels with control and edge signals

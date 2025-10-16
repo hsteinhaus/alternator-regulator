@@ -37,12 +37,10 @@ impl Logger {
     pub async fn open(&self) -> Result<Box<FileType<'_>>, Error<SdCardError>> {
         let volume0 = self.volume_mgr.open_volume(VolumeIdx(0))?;
         let volume0 = Box::leak(Box::new(volume0));
-        info!("Volume 0: {:?}", Debug2Format(&volume0));
+        debug!("Volume 0: {:?}", Debug2Format(&volume0));
 
         let mut dir = volume0.open_root_dir()?;
-        info!("Root directory opened");
         dir.make_dir_in_dir("logs").ok(); // create the directory if it doesn't exist
-        info!("Created directory");
         dir.change_dir("logs")?;
         let dir = Box::leak(Box::new(dir));
 
@@ -58,7 +56,6 @@ impl Logger {
 
         let fname: String<{Self::FN_LEN}> = format!("{:05}.CSV", index + 1).unwrap();
         let f = dir.open_file_in_dir(fname.as_str(), Mode::ReadWriteCreateOrAppend)?;
-        info!("File opened");
         Ok(Box::new(f))
     }
 
@@ -67,7 +64,7 @@ impl Logger {
         let mut mode: String<RM_LEN> = String::new();
         REGULATOR_MODE.lock(|rm|mode.push_str(rm.borrow().as_str())).unwrap();
         let line: String<800> = format!("{};{};{};{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT).unwrap();
-        warn!("{}", Debug2Format(&line));
+        debug!("{}", Debug2Format(&line));
         file.write(line.as_bytes())?;
         file.flush()
     }

@@ -1,16 +1,16 @@
+use crate::board::startup::SpiDeviceType;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
-use embedded_graphics::primitives::{Circle, PrimitiveStyle, Rectangle, Triangle};
+use embedded_graphics::primitives::Rectangle;
 use esp_hal::{delay::Delay, gpio::Output};
 use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
 use static_cell::StaticCell;
-use crate::board::startup::SpiDeviceType;
 
 type DisplayInterface<'a> = SpiInterface<'a, SpiDeviceType, Output<'a>>;
 type D = mipidsi::Display<DisplayInterface<'static>, ILI9342CRgb565, Output<'static>>;
 
 #[allow(dead_code)]
-pub struct DisplayDriver{
+pub struct DisplayDriver {
     bl_pin: Output<'static>,
     pub display: &'static mut D,
 }
@@ -52,31 +52,6 @@ impl DisplayDriver {
         );
         display.clear(Rgb565::BLACK).unwrap();
         Self { bl_pin: bl, display }
-    }
-
-    #[allow(dead_code)]
-    pub fn draw_smiley(&mut self) -> Result<(), <D as DrawTarget>::Error> {
-        // Draw the left eye as a circle located at (50, 100), with a diameter of 40, filled with white
-        Circle::new(Point::new(50, 100), 40)
-            .into_styled(PrimitiveStyle::with_fill(Rgb565::WHITE))
-            .draw(self.display)?;
-
-        // Draw the right eye as a circle located at (50, 200), with a diameter of 40, filled with white
-        Circle::new(Point::new(50, 200), 40)
-            .into_styled(PrimitiveStyle::with_fill(Rgb565::WHITE))
-            .draw(self.display)?;
-
-        // Draw an upside down red triangle to represent a smiling mouth
-        Triangle::new(Point::new(130, 140), Point::new(130, 200), Point::new(160, 170))
-            .into_styled(PrimitiveStyle::with_fill(Rgb565::RED))
-            .draw(self.display)?;
-
-        // Cover the top part of the mouth with a black triangle so it looks closed instead of open
-        Triangle::new(Point::new(130, 150), Point::new(130, 190), Point::new(150, 170))
-            .into_styled(PrimitiveStyle::with_fill(Rgb565::BLACK))
-            .draw(self.display)?;
-
-        Ok(())
     }
 }
 
