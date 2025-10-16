@@ -167,7 +167,7 @@ pub struct PpsDriver {
 impl PpsDriver {
     pub fn new(i2c: I2c<'static, Async>, address: u8) -> Result<Self, Error> {
         let mut s = Self { i2c, address };
-        s.enable_bl(false)?; // ensure to disable the module ASAP, as we might come from panic reset
+        s.enable_bl(false).ok(); // try to disable the module ASAP, as we might come from panic reset
         Ok(s)
     }
 

@@ -20,6 +20,7 @@ mod board;
 mod ui;
 mod util;
 
+use defmt::Debug2Format;
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::make_static;
@@ -61,9 +62,12 @@ fn main() -> ! {
     #[cfg(feature = "log-04")]
     esp_println::logger::init_logger(log_04::LevelFilter::Info);
 
-    let mut res = startup::Resources::initialize(); // intentionally non-static, compontents are intended to be moved out into the tasks
-    info!("Embassy initialized!");
+    let mut res = startup::Resources::initialize().unwrap_or_else(|err| {
+        error!("critical error - startup failed: {:?}", Debug2Format(&err));
+        loop {}
+    });
 
+    info!("Embassy initialized!");
     let channel = app::statemachine::prepare_channel();
     let button_sender = channel.sender();
     let rpm_sender = channel.sender();
@@ -96,7 +100,7 @@ fn main() -> ! {
                 },
             );
         })
-        .unwrap();
+        .expect("Critical - failed to start APP core");
 
     // start PRO core executor
     let executor_pro = make_static!(Executor::new());

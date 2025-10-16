@@ -1,13 +1,26 @@
+use core::convert::Infallible;
 use crate::board::startup::SpiDeviceType;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;
 use esp_hal::{delay::Delay, gpio::Output};
 use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
+use mipidsi::interface::SpiError;
 use static_cell::StaticCell;
+use thiserror_no_std::Error;
 
 type DisplayInterface<'a> = SpiInterface<'a, SpiDeviceType, Output<'a>>;
 type D = mipidsi::Display<DisplayInterface<'static>, ILI9342CRgb565, Output<'static>>;
+
+#[derive(Error, Debug)]
+pub enum DisplayError {
+    #[error("Display initialization failed")]
+    InitFailed,
+
+    #[error("Display draw failed: {0:?}")]
+//    DisplayError(#[from] mipidsi::interface::SpiError<embedded_hal_bus::spi::DeviceError<esp_hal::spi::Error, core::convert::Infallible>, core::convert::Infallible>),
+    DisplayError(#[from] SpiError<embedded_hal_bus::spi::DeviceError<esp_hal::spi::Error, Infallible>, Infallible>),
+}
 
 #[allow(dead_code)]
 pub struct DisplayDriver {
@@ -32,7 +45,7 @@ impl DisplayDriver {
         mut bl: Output<'static>,
         mut rst: Output<'static>,
         dc: Output<'static>,
-    ) -> Self {
+    ) -> Result<Self, DisplayError> {
         static BUFFER: StaticCell<[u8; 128]> = StaticCell::new();
         let di_buf: &'static mut [u8] = BUFFER.init([0_u8; 128]);
         let di = SpiInterface::new(spi_device, dc, di_buf);
@@ -48,10 +61,10 @@ impl DisplayDriver {
                 .display_size(320, 240)
                 .reset_pin(rst)
                 .init(&mut delay)
-                .unwrap(),
+                .map_err(|_| DisplayError::InitFailed)?,
         );
-        display.clear(Rgb565::BLACK).unwrap();
-        Self { bl_pin: bl, display }
+        display.clear(Rgb565::BLACK)?;
+        Ok(Self { bl_pin: bl, display })
     }
 }
 
