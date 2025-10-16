@@ -10,7 +10,7 @@ use static_cell::StaticCell;
 
 use self::lvgl::{Bar, Label, Meter, Widget};
 use self::lvgl_buffers::lvgl_disp_init;
-use crate::app::shared::{PROCESS_DATA, REGULATOR_MODE, RM_LEN};
+use crate::app::shared::{MAX_FIELD_CURRENT, MAX_FIELD_VOLTAGE, PROCESS_DATA, REGULATOR_MODE, RM_LEN};
 use crate::board::driver::display::DisplayDriver;
 
 mod lvgl;
@@ -57,13 +57,13 @@ impl<'a> Widgets<'a> {
         meter.set_value(0.).expect("Failed to set meter value");
 
         // Create bars for field voltage and current
-        let field_voltage_bar = Bar::new(screen).width(12).height(228).range(0., 30.);
+        let field_voltage_bar = Bar::new(screen).width(12).height(228).range(0., MAX_FIELD_VOLTAGE);
 
         let field_current_bar =
             Bar::new(screen)
                 .width(12)
                 .height(228)
-                .range(0., 5.)
+                .range(0., MAX_FIELD_CURRENT)
                 .align(LV_ALIGN_RIGHT_MID as lv_align_t, 0, 0);
 
         // Create labels for field voltage and current

@@ -15,7 +15,7 @@ pub const RM_LEN: usize = 10;
 pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>>> =
     Mutex::new(RefCell::new(String::new()));
 
-pub const BASE_CURRENT: f32 = 1.5;        // A
+pub const MAX_FIELD_CURRENT: f32 = 3.0;        // A
 pub const MAX_FIELD_VOLTAGE: f32 = 20.0;  // V
 
 pub const RPM_MIN: usize = 800;   // rpm (engine)
@@ -54,6 +54,7 @@ pub struct ProcessData {
     pub pps_temperature: AtomicF32,
     pub pps_mode: AtomicU8,
     pub soc: AtomicF32,
+    pub ble_rate: AtomicF32,
 }
 
 // AtomicF32 is Sync, so this will compile
@@ -67,6 +68,7 @@ pub static PROCESS_DATA: ProcessData = ProcessData {
     pps_temperature: AtomicF32::new(f32::NAN),
     pps_mode: AtomicU8::new(PpsRunningMode::Unknown as u8),
     soc: AtomicF32::new(f32::NAN),
+    ble_rate: AtomicF32::new(0.),
 };
 
 #[allow(unused)]
@@ -90,7 +92,7 @@ impl fmt::Display for ProcessData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{};{};{};{};{};{};{};{}",
+            "{};{};{};{};{};{};{};{};{}",
             self.rpm.load(Ordering::Relaxed),
             self.field_current.load(Ordering::Relaxed),
             self.field_voltage.load(Ordering::Relaxed),
@@ -99,6 +101,7 @@ impl fmt::Display for ProcessData {
             self.temperature.load(Ordering::Relaxed),
             self.pps_temperature.load(Ordering::Relaxed),
             self.pps_mode.load(Ordering::Relaxed),
+            self.ble_rate.load(Ordering::Relaxed),
         )
     }
 }
