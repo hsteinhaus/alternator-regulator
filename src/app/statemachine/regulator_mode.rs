@@ -66,7 +66,7 @@ impl RegulatorMode {
                 ButtonEvent::IncShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
-                        c.adjust_target_inc(fminf(0.1*(*count as f32), 0.));
+                        c.adjust_target_factor_inc(fminf(0.1*(*count as f32), 1.));
                     });
                     Handled
                 }
@@ -74,7 +74,7 @@ impl RegulatorMode {
                 ButtonEvent::DecShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
-                        c.adjust_target_inc(fmaxf(-0.1*(*count as f32), 0.));
+                        c.adjust_target_factor_inc(fmaxf(-0.1*(*count as f32), -1.));
                     });
                     Handled
                 }

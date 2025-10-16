@@ -28,14 +28,13 @@ impl Controller {
         }
     }
 
-    pub fn adjust_target(&mut self, target: f32) {
-        assert!(target >= 0. && target <= 1.);
-        info!("adjusting target to {}", target);
-        self.target = target;
-    }
+    // pub fn adjust_target(&mut self, target: f32) {
+    //     assert!(target >= 0. && target <= 1.);
+    //     info!("adjusting target to {}", target);
+    //     self.target = target;
+    // }
 
-    pub fn adjust_target_inc(&mut self, target_inc: f32) {
-        assert!(target_inc >= 0. && target_inc <= 1.);
+    pub fn adjust_target_factor_inc(&mut self, target_inc: f32) {
         let mut target = self.target + target_inc;
         if target > 1. {
             target = 1.
@@ -44,11 +43,10 @@ impl Controller {
             target = 0.
         };
         self.target = target;
-        info!("adjusting target to {}", target);
-        self.target = target;
+        info!("adjusting target factor with inc {} to {}", target_inc, target);
     }
 
-    pub fn set_derating(&mut self, derating: f32) {
+    pub fn set_derating_factor(&mut self, derating: f32) {
         assert!(derating >= 0. && derating <= 1.);
         info!("setting derating to {}", derating);
         self.derating = derating;
