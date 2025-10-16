@@ -1,4 +1,4 @@
-use crate::app::shared::{PpsSetMode, CONTROLLER, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT};
+use crate::app::shared::{PpsSetMode, BASE_CURRENT, CONTROLLER, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT};
 use core::cmp::min;
 use core::sync::atomic::Ordering;
 use embassy_time::{Duration, Ticker};
@@ -56,8 +56,8 @@ impl Controller {
 
     pub fn update(&self) {
         if self.power_on {
-            let rpm = PROCESS_DATA.rpm.load(Ordering::SeqCst) as f32;
-            let f = 1.0;//Self::lookup_rpm_factor(rpm);
+            let rpm = PROCESS_DATA.rpm.load(Ordering::Relaxed) as f32;
+            let f = BASE_CURRENT /* * Self::lookup_rpm_factor(rpm)*/;
             let target = f * self.target * self.derating;
             SETPOINT.field_current_limit.store(target, Ordering::SeqCst);
         }

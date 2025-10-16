@@ -15,9 +15,11 @@ pub const RM_LEN: usize = 10;
 pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>>> =
     Mutex::new(RefCell::new(String::new()));
 
-pub const RPM_MIN: usize = 800;
-pub const RPM_MAX: usize = 4500;
-pub const MAX_FIELD_VOLTAGE: f32 = 20.0;
+pub const BASE_CURRENT: f32 = 1.5;        // A
+pub const MAX_FIELD_VOLTAGE: f32 = 20.0;  // V
+
+pub const RPM_MIN: usize = 800;   // rpm (engine)
+pub const RPM_MAX: usize = 4500;  // rpm (engine)
 
 #[repr(u8)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
