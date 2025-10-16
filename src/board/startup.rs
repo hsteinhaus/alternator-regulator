@@ -29,6 +29,7 @@ use esp_hal::{
 };
 use static_cell::make_static;
 use thiserror_no_std::Error;
+use crate::board::driver::wifi_ble::WifiError;
 
 type SpiBusType = SpiDmaBus<'static, Async>;
 pub type SpiDeviceType = RefCellDevice<'static, SpiBusType, Output<'static>, Delay>;
@@ -49,13 +50,16 @@ pub enum StartupError {
     I2cError(#[from] esp_hal::i2c::master::ConfigError),
 
     #[error("PPS error: {0:?}")]
-    PpsError(#[from] crate::board::driver::pps::Error),
+    PpsError(#[from] crate::board::driver::pps::PpsError),
 
     #[error("SPI Master config error: {0:?}")]
     SpiConfigError(#[from] esp_hal::spi::master::ConfigError),
 
     #[error("PCNT error: {0:?}")]
     PcntError(#[from] crate::board::driver::pcnt::Error),
+
+    #[error("Wifi error: {0:?}")]
+    WifiError(#[from] WifiError),
 
     #[error("Never happened")]
     NeverHappened(#[from] core::convert::Infallible),
@@ -167,7 +171,7 @@ impl Resources {
             peripherals.BT,
             AnyTimer::from(TimerGroup::new(peripherals.TIMG0).timer0),
             rng,
-        );
+        )?;
 
         Ok(Self {
             led0,
