@@ -3,7 +3,7 @@ use defmt::Debug2Format;
 use embassy_time::{Duration, Ticker};
 use embedded_sdmmc::{Error, File, Mode, SdCardError, TimeSource, Timestamp, VolumeIdx, VolumeManager};
 use heapless::{format, String};
-
+use thiserror_no_std::Error;
 use crate::app::shared::{PROCESS_DATA, REGULATOR_MODE, RM_LEN, SETPOINT};
 use crate::board::startup::SdCardType;
 
@@ -13,6 +13,18 @@ type VolumeManagerType = VolumeManager<SdCardType, EmbassyTimeSource>;
 
 #[derive(Default)]
 pub struct EmbassyTimeSource();
+
+#[derive(Debug, Error)]
+pub enum LoggerError {
+    #[error("SD card error")]
+    SdCard(#[from] Error<SdCardError>),
+
+    #[error("Heapless string to small for format: {0}")]
+    Heapless(#[from] heapless::CapacityError),
+
+    #[error("Format error: {0}")]
+    Format(#[from] core::fmt::Error),
+}
 
 struct Logger {
     volume_mgr: VolumeManagerType,
@@ -34,7 +46,7 @@ impl Logger {
         Self { volume_mgr }
     }
 
-    pub async fn open(&self) -> Result<Box<FileType<'_>>, Error<SdCardError>> {
+    pub async fn open(&self) -> Result<Box<FileType<'_>>, LoggerError> {
         let volume0 = self.volume_mgr.open_volume(VolumeIdx(0))?;
         let volume0 = Box::leak(Box::new(volume0));
         debug!("Volume 0: {:?}", Debug2Format(&volume0));
@@ -54,44 +66,44 @@ impl Logger {
             }
         })?;
 
-        let fname: String<{Self::FN_LEN}> = format!("{:05}.CSV", index + 1).unwrap();
+        let fname: String<{Self::FN_LEN}> = format!("{:05}.CSV", index + 1)?;
         let f = dir.open_file_in_dir(fname.as_str(), Mode::ReadWriteCreateOrAppend)?;
         Ok(Box::new(f))
     }
 
-    pub async fn log<'a>(&self, file: &'a FileType<'a>) -> Result<(), Error<SdCardError>> {
+    pub async fn log<'a>(&self, file: &'a FileType<'a>) -> Result<(), LoggerError> {
         let now = embassy_time::Instant::now();
         let mut mode: String<RM_LEN> = String::new();
-        REGULATOR_MODE.lock(|rm|mode.push_str(rm.borrow().as_str())).unwrap();
-        let line: String<800> = format!("{};{};{};;{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT).unwrap();
+        REGULATOR_MODE.lock(|rm|mode.push_str(rm.borrow().as_str()))?;
+        let line: String<800> = format!("{};{};{};;{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT)?;
         debug!("{}", Debug2Format(&line));
         file.write(line.as_bytes())?;
-        file.flush()
+        file.flush()?;
+        Ok(())
     }
 }
 
 #[embassy_executor::task]
 pub async fn logger(card: SdCardType) -> () {
     let logger = Logger::new(card).await;
-    let file = logger.open().await.unwrap();
+    let Ok(file) = logger.open().await else {
+        warn!("Could not open SD card, disabling CSV logger");
+        return;
+    };
 
     let mut ticker = Ticker::every(Duration::from_secs(1));
-    //    info!("SD card size: {:?}", logger.wait_for_card_and_get_size().await);
     loop {
-        logger.log(&file).await.expect("Failed to log");
+        logger.log(&file).await.unwrap_or_else(|err| {
+            error!("Could not log to SD card: {:?}", Debug2Format(&err));
+        });
         ticker.next().await;
     }
 }
 
 impl TimeSource for EmbassyTimeSource {
-    // In theory you could use the RTC of the rp2040 here, if you had
-    // any external time synchronizing device.
     fn get_timestamp(&self) -> Timestamp {
         let now = embassy_time::Instant::now();
         let secs = now.as_secs();
-
-        // Convert seconds since boot to a basic timestamp
-        // Note: This is a simplified conversion, you might want to add real-time clock support
         Timestamp {
             year_since_1970: (secs / (365 * 24 * 3600)) as u8,
             zero_indexed_month: 0,
