@@ -8,16 +8,16 @@ use crate::board::driver::pps::{Error as PpsError, PpsDriver};
 const PPS_LOOP_TIME_MS: u64 = 500;
 
 pub async fn read_pps(pps: &mut PpsDriver) {
-    pps.get_voltage()
+    pps.get_voltage().await
         .and_then(|v| Ok(PROCESS_DATA.field_voltage.store(v, Ordering::SeqCst)))
         .ok();
-    pps.get_current()
+    pps.get_current().await
         .and_then(|i| Ok(PROCESS_DATA.field_current.store(i, Ordering::SeqCst)))
         .ok();
-    pps.get_temperature()
+    pps.get_temperature().await
         .and_then(|t| Ok(PROCESS_DATA.pps_temperature.store(t, Ordering::SeqCst)))
         .ok();
-    pps.get_running_mode()
+    pps.get_running_mode().await
         .and_then(|m| Ok(PROCESS_DATA.pps_mode.store(m as u8, Ordering::SeqCst)))
         .ok();
 }
@@ -30,17 +30,17 @@ pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
     debug!("write_pps: cl: {:?} vl: {:?} enabled: {:?}", current_limit, voltage_limit, enabled);
 
     if !current_limit.is_nan() {
-        pps.set_current(current_limit)?;
+        pps.set_current(current_limit).await?;
     }
     if !voltage_limit.is_nan() {
-        pps.set_voltage(voltage_limit)?;
+        pps.set_voltage(voltage_limit).await?;
     }
     match enabled {
         PpsSetMode::Off => {
-            pps.enable(false)?;
+            pps.enable(false).await?;
         }
         PpsSetMode::On => {
-            pps.enable(true)?;
+            pps.enable(true).await?;
         }
         PpsSetMode::DontTouch => (),
     };
