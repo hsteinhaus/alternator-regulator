@@ -23,6 +23,7 @@ esp-wifi            = { path = "esp-hal/esp-wifi", features = ["esp32", "ble", "
 
 # embeded-hal family
 embedded-hal =  { version = "1.0.0", features = [] }
+embedded-hal-async =  { version = "1.0.0", features = [] }
 embedded-hal-bus = { version = "0.3.0", features = ["async", ] }
 embedded-graphics = { version = "0.8.1", features = [] }
 

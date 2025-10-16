@@ -3,7 +3,7 @@ use embassy_time::{with_timeout, Duration, Instant, Ticker};
 use num_traits::FromPrimitive;
 use crate::app::shared::{PpsSetMode, PROCESS_DATA, SETPOINT};
 use crate::board::driver::analog::AdcDriverType;
-use crate::board::driver::pps::{Error as PpsError, PpsDriver};
+use crate::board::driver::pps::{PpsError as PpsError, PpsDriver};
 
 const PPS_LOOP_TIME_MS: u64 = 500;
 
