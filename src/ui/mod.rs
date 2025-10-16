@@ -2,9 +2,9 @@ use core::ffi::{c_char, c_void, CStr};
 use embassy_time::{Duration, Instant, Timer};
 use heapless::String;
 use lvgl_rust_sys::{
-    lv_align_t, lv_init, lv_log_register_print_cb, lv_obj_set_style_pad_bottom, lv_obj_set_style_pad_left,
-    lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act, lv_text_align_t, lv_timer_handler,
-    LV_ALIGN_RIGHT_MID, LV_TEXT_ALIGN_RIGHT,
+    lv_align_t, lv_disp_get_default, lv_init, lv_log_register_print_cb, lv_obj_set_style_pad_bottom,
+    lv_obj_set_style_pad_left, lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act, lv_text_align_t,
+    lv_timer_handler, LV_ALIGN_RIGHT_MID, LV_TEXT_ALIGN_RIGHT,
 };
 use static_cell::StaticCell;
 
@@ -12,7 +12,6 @@ use self::lvgl::{Bar, Label, Meter, Widget};
 use self::lvgl_buffers::lvgl_disp_init;
 use crate::app::shared::{PROCESS_DATA, REGULATOR_MODE, RM_LEN};
 use crate::board::driver::display::DisplayDriver;
-use crate::util::led_debug::LedDebug;
 
 mod lvgl;
 mod lvgl_buffers;
@@ -113,6 +112,26 @@ impl<'a> Widgets<'a> {
     }
 }
 
+// async fn lvgl_refresh_task(disp_refr: *mut lv_disp_t) {
+//     // this async fn replaces LVGL's central refresh routine `_lv_disp_refr_timer()`;
+//     unsafe {
+//         let disp_refr = disp_refr.as_mut().unwrap();
+//         lv_obj_update_layout(disp_refr.act_scr);
+//         yield_now().await;
+//         lv_obj_update_layout(disp_refr.top_layer);
+//         yield_now().await;
+//         lv_obj_update_layout(disp_refr.sys_layer);
+//         yield_now().await;
+//
+//         lv_refr_join_area();
+//         yield_now().await;
+//         refr_sync_areas();
+//         yield_now().await;
+//         refr_invalid_areas();
+//     }
+//
+// }
+
 #[embassy_executor::task]
 pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
     unsafe {
@@ -128,13 +147,14 @@ pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
         // UI loop
         lv_timer_handler(); // first rendering takes a long time, so do it once befor turing on the backlight
         display_driver.bl_on();
+        let _disp = lv_disp_get_default();
         loop {
             widgets
                 .update()
                 .unwrap_or_else(|e| warn!("Failed to update widgets: {:?}", e));
-            LedDebug::begin();
             lv_timer_handler();
-            LedDebug::end();
+            //            lv_refr_now(disp);
+            //            lvgl_refresh_task(disp).await;
             Timer::after(Duration::from_millis(100)).await;
         }
     }
