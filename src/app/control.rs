@@ -57,7 +57,7 @@ impl Controller {
     pub fn update(&self) {
         if self.power_on {
             let rpm = PROCESS_DATA.rpm.load(Ordering::SeqCst) as f32;
-            let f = Self::lookup_rpm_factor(rpm);
+            let f = 1.0;//Self::lookup_rpm_factor(rpm);
             let target = f * self.target * self.derating;
             SETPOINT.field_current_limit.store(target, Ordering::SeqCst);
         }
