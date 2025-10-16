@@ -63,7 +63,7 @@ impl Logger {
         let now = embassy_time::Instant::now();
         let mut mode: String<RM_LEN> = String::new();
         REGULATOR_MODE.lock(|rm|mode.push_str(rm.borrow().as_str())).unwrap();
-        let line: String<800> = format!("{};{};{};{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT).unwrap();
+        let line: String<800> = format!("{};{};{};;{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT).unwrap();
         debug!("{}", Debug2Format(&line));
         file.write(line.as_bytes())?;
         file.flush()

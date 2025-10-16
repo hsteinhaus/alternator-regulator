@@ -1,5 +1,7 @@
 use bt_hci::event::Vendor;
 use bt_hci::param::{BdAddr, LeAdvReportsIter, LeExtAdvReportsIter};
+use core::sync::atomic::Ordering;
+use embassy_time::Instant;
 use trouble_host::advertise::AdStructure;
 use trouble_host::prelude::EventHandler;
 use victron_ble::DeviceState;
@@ -26,6 +28,7 @@ pub struct VictronBLE {
 }
 
 impl VictronBLE {
+    const EXP_MA_COEFF: f32 = 0.1;
     const VICTRON_ID: u16 = 0x02e1;
     const VICTRON_DEVICES: [VictronDevice; 3] = [
         VictronDevice {
@@ -69,6 +72,7 @@ impl VictronBLE {
                         PROCESS_DATA
                             .bat_current
                             .store(gc_state.battery_voltage1_v, core::sync::atomic::Ordering::Relaxed);
+                        Self::update_statistics();
                     }
                     DeviceState::BatteryMonitor(bm_state) => {
                         PROCESS_DATA
@@ -80,6 +84,7 @@ impl VictronBLE {
                         PROCESS_DATA
                             .soc
                             .store(bm_state.state_of_charge_pct, core::sync::atomic::Ordering::Relaxed);
+                        Self::update_statistics();
                     }
                     _ => {}
                 }
@@ -89,6 +94,20 @@ impl VictronBLE {
                 warn!("Victron Data Error: {:?}", crate::fmt::Debug2Format(&e));
             }
         }
+    }
+
+    fn update_statistics() {
+        static mut LAST_MDATA: Instant = Instant::from_secs(0);
+
+        let now = Instant::now();
+        let mut rate = PROCESS_DATA.ble_rate.load(Ordering::Relaxed);
+        unsafe {
+            let time_delta = (now - LAST_MDATA).as_millis() as f32 / 1000.;
+            rate =
+                (1. - VictronBLE::EXP_MA_COEFF) * rate + (1. / time_delta) * VictronBLE::EXP_MA_COEFF;
+            LAST_MDATA = now;
+        }
+        PROCESS_DATA.ble_rate.store(rate, Ordering::Relaxed);
     }
 }
 
