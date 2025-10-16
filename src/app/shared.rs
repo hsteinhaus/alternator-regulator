@@ -15,7 +15,7 @@ pub const RM_LEN: usize = 10;
 pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>>> =
     Mutex::new(RefCell::new(String::new()));
 
-pub const RPM_MIN: usize = 1200;
+pub const RPM_MIN: usize = 800;
 pub const RPM_MAX: usize = 4500;
 pub const MAX_FIELD_VOLTAGE: f32 = 20.0;
 
