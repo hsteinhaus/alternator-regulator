@@ -126,11 +126,11 @@ async fn app_main(ready_sender: SenderType) -> ! {
     loop {
         // SETPOINT
         //     .field_current_limit
-        //     .store(rng.random() as f32 / u32::MAX as f32 * 2., Ordering::SeqCst);
+        //     .store(rng.random() as f32 / u32::MAX as f32 * 2., Ordering::Relaxed);
         // SETPOINT
         //     .field_voltage_limit
-        //     .store(rng.random() as f32 / u32::MAX as f32 * 20., Ordering::SeqCst);
-        // SETPOINT.pps_enabled.store(SetMode::On as u8, Ordering::SeqCst);
+        //     .store(rng.random() as f32 / u32::MAX as f32 * 20., Ordering::Relaxed);
+        // SETPOINT.pps_enabled.store(SetMode::On as u8, Ordering::Relaxed);
         ticker.next().await;
     }
 }

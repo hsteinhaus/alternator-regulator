@@ -16,7 +16,7 @@ pub async fn read_rpm(pcnt_driver: &mut PcntDriver) -> f32 {
         * (1./POLE_PAIRS/2.)               // 6 pole pairs, 2 imp per rev
         * (1000./RPM_LOOP_TIME_MS as f32)  // intervals per second
         * PULLEY_RATIO; // belt ratio
-    PROCESS_DATA.rpm.store(rpm, Ordering::SeqCst);
+    PROCESS_DATA.rpm.store(rpm, Ordering::Relaxed);
     rpm
 }
 
@@ -43,6 +43,6 @@ pub async fn rpm_task(sender: SenderType, mut pcnt_driver: PcntDriver) -> ! {
 
 impl ProcessData {
     pub fn rpm_is_normal(&self) -> bool {
-        self.rpm.load(Ordering::SeqCst) > RPM_MIN as f32
+        self.rpm.load(Ordering::Relaxed) > RPM_MIN as f32
     }
 }

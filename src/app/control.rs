@@ -57,21 +57,21 @@ impl Controller {
             let rpm = PROCESS_DATA.rpm.load(Ordering::Relaxed) as f32;
             let f = BASE_CURRENT /* * Self::lookup_rpm_factor(rpm)*/;
             let target = f * self.target * self.derating;
-            SETPOINT.field_current_limit.store(target, Ordering::SeqCst);
+            SETPOINT.field_current_limit.store(target, Ordering::Relaxed);
         }
     }
 
     pub fn start_charging(&mut self) {
         info!("starting charging");
-        SETPOINT.pps_enabled.store(PpsSetMode::On as u8, Ordering::SeqCst);
-        SETPOINT.field_voltage_limit.store(MAX_FIELD_VOLTAGE, Ordering::SeqCst);
+        SETPOINT.pps_enabled.store(PpsSetMode::On as u8, Ordering::Relaxed);
+        SETPOINT.field_voltage_limit.store(MAX_FIELD_VOLTAGE, Ordering::Relaxed);
         self.power_on = true;
         self.target = 0.1;
     }
 
     pub fn stop_charging(&mut self) {
         info!("stopping charging");
-        SETPOINT.pps_enabled.store(PpsSetMode::Off as u8, Ordering::SeqCst);;
+        SETPOINT.pps_enabled.store(PpsSetMode::Off as u8, Ordering::Relaxed);;
         self.power_on = false;
     }
 

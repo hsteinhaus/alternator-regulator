@@ -68,18 +68,18 @@ impl VictronBLE {
                         // fake a current reading from normally non-zero voltage
                         PROCESS_DATA
                             .bat_current
-                            .store(gc_state.battery_voltage1_v, core::sync::atomic::Ordering::SeqCst);
+                            .store(gc_state.battery_voltage1_v, core::sync::atomic::Ordering::Relaxed);
                     }
                     DeviceState::BatteryMonitor(bm_state) => {
                         PROCESS_DATA
                             .bat_voltage
-                            .store(bm_state.battery_current_a, core::sync::atomic::Ordering::SeqCst);
+                            .store(bm_state.battery_current_a, core::sync::atomic::Ordering::Relaxed);
                         PROCESS_DATA
                             .bat_current
-                            .store(bm_state.battery_current_a, core::sync::atomic::Ordering::SeqCst);
+                            .store(bm_state.battery_current_a, core::sync::atomic::Ordering::Relaxed);
                         PROCESS_DATA
                             .soc
-                            .store(bm_state.state_of_charge_pct, core::sync::atomic::Ordering::SeqCst);
+                            .store(bm_state.state_of_charge_pct, core::sync::atomic::Ordering::Relaxed);
                     }
                     _ => {}
                 }

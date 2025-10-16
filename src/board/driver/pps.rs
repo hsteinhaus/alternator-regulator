@@ -173,6 +173,7 @@ impl PpsDriver {
 
     pub async fn set_current(&mut self, current: f32) -> Result<&mut Self, Error> {
         let cmd = WriteCommand::SetCurrent(current);
+        warn!("set current {}, sending command: {:?}", current, cmd);
         cmd.send_async(&mut self.i2c, self.address).await?;
         Ok(self)
     }

@@ -9,23 +9,23 @@ const PPS_LOOP_TIME_MS: u64 = 500;
 
 pub async fn read_pps(pps: &mut PpsDriver) {
     pps.get_voltage().await
-        .and_then(|v| Ok(PROCESS_DATA.field_voltage.store(v, Ordering::SeqCst)))
+        .and_then(|v| Ok(PROCESS_DATA.field_voltage.store(v, Ordering::Relaxed)))
         .ok();
     pps.get_current().await
-        .and_then(|i| Ok(PROCESS_DATA.field_current.store(i, Ordering::SeqCst)))
+        .and_then(|i| Ok(PROCESS_DATA.field_current.store(i, Ordering::Relaxed)))
         .ok();
     pps.get_temperature().await
-        .and_then(|t| Ok(PROCESS_DATA.pps_temperature.store(t, Ordering::SeqCst)))
+        .and_then(|t| Ok(PROCESS_DATA.pps_temperature.store(t, Ordering::Relaxed)))
         .ok();
     pps.get_running_mode().await
-        .and_then(|m| Ok(PROCESS_DATA.pps_mode.store(m as u8, Ordering::SeqCst)))
+        .and_then(|m| Ok(PROCESS_DATA.pps_mode.store(m as u8, Ordering::Relaxed)))
         .ok();
 }
 
 pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
-    let current_limit = SETPOINT.field_current_limit.swap(f32::NAN, Ordering::SeqCst);
-    let voltage_limit = SETPOINT.field_voltage_limit.swap(f32::NAN, Ordering::SeqCst);
-    let enabled = PpsSetMode::from_u8(SETPOINT.pps_enabled.swap(PpsSetMode::DontTouch as u8, Ordering::SeqCst))
+    let current_limit = SETPOINT.field_current_limit.swap(f32::NAN, Ordering::Relaxed);
+    let voltage_limit = SETPOINT.field_voltage_limit.swap(f32::NAN, Ordering::Relaxed);
+    let enabled = PpsSetMode::from_u8(SETPOINT.pps_enabled.swap(PpsSetMode::DontTouch as u8, Ordering::Relaxed))
         .ok_or(PpsError::Unsupported)?;
     debug!("write_pps: cl: {:?} vl: {:?} enabled: {:?}", current_limit, voltage_limit, enabled);
 

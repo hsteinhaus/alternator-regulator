@@ -11,5 +11,5 @@ pub mod rpm;
 #[allow(dead_code)]
 pub async fn read_adc(adc: &mut AdcDriverType) {
     let r = adc.read_oneshot().await;
-    PROCESS_DATA.bat_voltage.store(r as f32, Ordering::SeqCst);
+    PROCESS_DATA.bat_voltage.store(r as f32, Ordering::Relaxed);
 }
