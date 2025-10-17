@@ -3,8 +3,8 @@ runner = "espflash flash --monitor --chip esp32 --baud 1000000"
 #  --log-format defmt
 
 [env]
-ESP_LOG="debug,altreg_fire27::app::state=debug,altreg_fire27::app::control=debug"
-DEFMT_LOG="info,altreg_fire27::app::state=debug,altreg_fire27::board::driver::pps=debug,altreg_fire27::app::logger=debug"
+ESP_LOG="info,altreg_fire27::app::logger=debug"
+DEFMT_LOG="info,altreg_fire27::app::logger=debug"
 DEP_LV_CONFIG_PATH={ value = "./lvgl_rust_sys/lvgl", relative = true }
 ESP_HAL_CONFIG_PLACE_SPI_MASTER_DRIVER_IN_RAM="true"
 

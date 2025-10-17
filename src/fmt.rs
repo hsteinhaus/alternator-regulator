@@ -328,7 +328,8 @@ impl defmt::Format for Bytes<'_> {
 }
 
 #[cfg(feature = "defmt")]
-pub use defmt::Debug2Format;
+#[allow(unused)]
+pub use defmt::{Debug2Format, Format};
 
 #[cfg(feature = "log-04")]
 #[allow(unused)]
