@@ -1,5 +1,3 @@
-use crate::app::control::Controller;
-use crate::app::shared::{ButtonEvent, RegulatorEvent, RpmEvent, CONTROLLER, PROCESS_DATA, REGULATOR_MODE, RM_LEN};
 use embassy_sync::{
     blocking_mutex::raw::CriticalSectionRawMutex,
     channel::{Channel, Receiver, Sender},
@@ -8,6 +6,9 @@ use heapless::{format, String};
 use libm::{fmaxf, fminf};
 use static_cell::{make_static, StaticCell};
 use statig::prelude::*;
+
+use crate::app::control::Controller;
+use crate::app::shared::{ButtonEvent, RegulatorEvent, RpmEvent, CONTROLLER, REGULATOR_MODE, RM_LEN};
 
 const MAX_EVENTS: usize = 10;
 
@@ -40,28 +41,30 @@ impl RegulatorMode {
         }
     }
 
+    /// Off state - no field current, no RPM measurement possible
     #[state(entry_action = "enter_off")]
     async fn off(event: &RegulatorEvent) -> Outcome<State> {
         match event {
             RegulatorEvent::Button(button) => match button {
-                ButtonEvent::OkLong => {
-                    if PROCESS_DATA.rpm_is_normal() {
-                        Transition(State::charging())
-                    } else {
-                        Transition(State::idle())
-                    }
-                }
+                ButtonEvent::OkLong => Transition(State::idle()),
                 _ => Handled,
             },
             _ => Handled,
         }
     }
 
+    /// Idle state - field current is set to 1.0A to allow for RPM measurement is possible
+    /// field current is not controlled, no significant charging current
     #[state(entry_action = "enter_idle")]
     async fn idle(event: &RegulatorEvent) -> Outcome<State> {
         match event {
             RegulatorEvent::Rpm(rpm) => match rpm {
                 RpmEvent::Normal => Transition(State::charging()),
+                _ => Handled,
+            },
+            RegulatorEvent::Button(button) => match button {
+                ButtonEvent::IncLong => Transition(State::charging()),
+                ButtonEvent::OkShort(_) => Transition(State::off()),
                 _ => Handled,
             },
             _ => Handled,
@@ -91,8 +94,8 @@ impl RegulatorMode {
                     });
                     Handled
                 }
+                ButtonEvent::DecLong => Transition(State::idle()),
                 ButtonEvent::OkShort(_) => Transition(State::off()),
-                ButtonEvent::OkLong => Transition(State::off()),
                 _ => Handled,
             },
             _ => Handled,
@@ -104,7 +107,7 @@ impl RegulatorMode {
         info!("entering idle state");
         CONTROLLER.lock(|c| {
             let c: &mut Controller = &mut c.borrow_mut();
-            c.stop_charging();
+            c.start_idle();
         });
     }
 
@@ -122,7 +125,7 @@ impl RegulatorMode {
         info!("entering off state");
         CONTROLLER.lock(|c| {
             let c: &mut Controller = &mut c.borrow_mut();
-            c.stop_charging();
+            c.stop();
         });
     }
 }
@@ -131,7 +134,7 @@ impl RegulatorMode {
     async fn after_transition(&mut self, source: &State, target: &State, _context: &mut ()) {
         trace!("after_transition: {:?} -> {:?}", source, target);
         let state_name = format!(RM_LEN; "{:?}", target).unwrap_or_else(|_| Self::DUMMY_STR);
-        debug!("after_transition: {:?}", state_name);
+        //debug!("after_transition: {:?}", state_name);
         // debug!(
         //     "after_transition: {:?} -> {:?} -> {:?}",
         //     source, target, state_name

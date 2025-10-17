@@ -1,19 +1,22 @@
-use crate::app::shared::{PpsSetMode, MAX_FIELD_CURRENT, CONTROLLER, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT};
 use core::cmp::min;
 use core::sync::atomic::Ordering;
 use embassy_time::{Duration, Ticker};
 use libm::{floorf, fmaxf};
 
+use crate::app::shared::{PpsSetMode, MAX_FIELD_CURRENT, CONTROLLER, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT};
+
+
 #[derive(Debug)]
 pub struct Controller {
-    _last_current: f32,
     target: f32,
     derating: f32,
-    power_on: bool,
+    idle_active: bool,
+    load_active: bool,
 }
 
-#[allow(unused)]
+#[allow(dead_code)]
 impl Controller {
+    const IF0: f32 = 1.0; // offset field current to overcome battery voltage
     const RPM_STEP: usize = 100;
     const RPM_ARRAY_SIZE: usize = RPM_MAX / Controller::RPM_STEP;
     const RPM_FACTOR: [f32; Controller::RPM_ARRAY_SIZE] = Controller::const_rpm_factor();
@@ -21,10 +24,10 @@ impl Controller {
 
     pub const fn new() -> Self {
         Self {
-            _last_current: 0.,
             derating: 1.,
-            power_on: false,
             target: 0.,
+            idle_active: false,
+            load_active: false,
         }
     }
 
@@ -53,27 +56,43 @@ impl Controller {
     }
 
     pub fn update(&self) {
-        if self.power_on {
-            let rpm = PROCESS_DATA.rpm.load(Ordering::Relaxed) as f32;
-            let f = MAX_FIELD_CURRENT /* * Self::lookup_rpm_factor(rpm)*/;
-            let target = f * self.target * self.derating;
-            SETPOINT.field_current_limit.store(target, Ordering::Relaxed);
+        PROCESS_DATA.target_factor.store(self.target, Ordering::Relaxed);
+        let mut field_current = 0.;
+        if self.idle_active {
+            field_current += Self::IF0;
+            if self.load_active {
+                let _rpm = PROCESS_DATA.rpm.load(Ordering::Relaxed) as f32;
+                let rpm_factor = 1.0 /* * Self::lookup_rpm_factor(rpm)*/;
+                field_current += MAX_FIELD_CURRENT * rpm_factor * self.target * self.derating;
+            }
         }
+        SETPOINT.field_current_limit.store(field_current, Ordering::Relaxed);
+
+    }
+
+    pub fn start_idle(&mut self) {
+        debug!("starting idle");
+        SETPOINT.field_voltage_limit.store(MAX_FIELD_VOLTAGE, Ordering::Relaxed);
+        SETPOINT.pps_enabled.store(PpsSetMode::On as u8, Ordering::Relaxed);
+        self.idle_active = true;
+        self.load_active = false;
+        self.target = 0.;
+    }
+
+    pub fn stop(&mut self) {
+        debug!("stopping");
+        self.idle_active = false;
+        self.load_active = false;
+        SETPOINT.field_voltage_limit.store(0., Ordering::Relaxed);
+        SETPOINT.pps_enabled.store(PpsSetMode::Off as u8, Ordering::Relaxed);
     }
 
     pub fn start_charging(&mut self) {
         info!("starting charging");
-        SETPOINT.pps_enabled.store(PpsSetMode::On as u8, Ordering::Relaxed);
-        SETPOINT.field_voltage_limit.store(MAX_FIELD_VOLTAGE, Ordering::Relaxed);
-        self.power_on = true;
-        self.target = 0.1;
+        self.idle_active = true;
+        self.load_active = true;
     }
 
-    pub fn stop_charging(&mut self) {
-        info!("stopping charging");
-        SETPOINT.pps_enabled.store(PpsSetMode::Off as u8, Ordering::Relaxed);;
-        self.power_on = false;
-    }
 
     fn lookup_rpm_factor(rpm: f32) -> f32 {
         // Normalize RPM to array index (0.0 to RPM_ARRAY_SIZE-1)

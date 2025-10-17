@@ -18,7 +18,7 @@ pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>
 pub const MAX_FIELD_CURRENT: f32 = 3.0;        // A
 pub const MAX_FIELD_VOLTAGE: f32 = 20.0;  // V
 
-pub const RPM_MIN: usize = 800;   // rpm (engine)
+pub const RPM_MIN: usize = 500;   // rpm (engine)
 pub const RPM_MAX: usize = 4500;  // rpm (engine)
 
 #[repr(u8)]
@@ -55,6 +55,7 @@ pub struct ProcessData {
     pub pps_mode: AtomicU8,
     pub soc: AtomicF32,
     pub ble_rate: AtomicF32,
+    pub target_factor: AtomicF32,
 }
 
 // AtomicF32 is Sync, so this will compile
@@ -69,6 +70,7 @@ pub static PROCESS_DATA: ProcessData = ProcessData {
     pps_mode: AtomicU8::new(PpsRunningMode::Unknown as u8),
     soc: AtomicF32::new(f32::NAN),
     ble_rate: AtomicF32::new(0.),
+    target_factor: AtomicF32::new(0.),
 };
 
 #[allow(unused)]
@@ -92,8 +94,9 @@ impl fmt::Display for ProcessData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{};{};{};{};{};{};{};{};{}",
+            "{};{};{};{};{};{};{};{};{};{}",
             self.rpm.load(Ordering::Relaxed),
+            self.target_factor.load(Ordering::Relaxed),
             self.field_current.load(Ordering::Relaxed),
             self.field_voltage.load(Ordering::Relaxed),
             self.bat_current.load(Ordering::Relaxed),
