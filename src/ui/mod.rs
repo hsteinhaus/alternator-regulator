@@ -6,12 +6,12 @@ use lvgl_rust_sys::{
     lv_obj_set_style_pad_left, lv_obj_set_style_pad_right, lv_obj_set_style_pad_top, lv_scr_act, lv_text_align_t,
     lv_timer_handler, LV_ALIGN_RIGHT_MID, LV_TEXT_ALIGN_RIGHT,
 };
-use static_cell::StaticCell;
 
 use self::lvgl::{Bar, Label, Meter, Widget};
 use self::lvgl_buffers::lvgl_disp_init;
 use crate::app::shared::{MAX_FIELD_CURRENT, MAX_FIELD_VOLTAGE, PROCESS_DATA, REGULATOR_MODE, RM_LEN};
 use crate::board::driver::display::DisplayDriver;
+use crate::ui::lvgl::WidgetError;
 
 mod lvgl;
 mod lvgl_buffers;
@@ -25,8 +25,6 @@ struct Widgets<'a> {
     field_voltage_label: Label<'a>,
     field_current_label: Label<'a>,
 }
-
-static WIDGETS: StaticCell<Widgets> = StaticCell::new();
 
 #[no_mangle]
 unsafe extern "C" fn lvgl_log_print(c_str: *const c_char) {
@@ -42,7 +40,7 @@ pub extern "C" fn get_tick_ms() -> u32 {
 }
 
 impl<'a> Widgets<'a> {
-    fn create() -> Self {
+    fn create() -> Result<Self, WidgetError> {
         unsafe {
             lv_obj_set_style_pad_top(lv_scr_act(), 6, 0);
             lv_obj_set_style_pad_bottom(lv_scr_act(), 6, 0);
@@ -53,40 +51,40 @@ impl<'a> Widgets<'a> {
         assert!(!screen.is_null());
 
         // Create and configure the meter
-        let mut meter = Meter::new(screen);
-        meter.set_value(0.).expect("Failed to set meter value");
+        let mut meter = Meter::new(screen)?;
+        meter.set_value(0.)?;
 
         // Create bars for field voltage and current
-        let field_voltage_bar = Bar::new(screen).width(12).height(228).range(0., MAX_FIELD_VOLTAGE);
+        let field_voltage_bar = Bar::new(screen)?.width(12).height(228).range(0., MAX_FIELD_VOLTAGE);
 
         let field_current_bar =
-            Bar::new(screen)
+            Bar::new(screen)?
                 .width(12)
                 .height(228)
                 .range(0., MAX_FIELD_CURRENT)
                 .align(LV_ALIGN_RIGHT_MID as lv_align_t, 0, 0);
 
         // Create labels for field voltage and current
-        let field_voltage_label = Label::new(screen, "V");
-        field_voltage_label.x(18).text("1.3V");
+        let field_voltage_label = Label::new(screen, "V")?;
+        field_voltage_label.x(18).text("1.3V")?;
 
-        let field_current_label = Label::new(screen, "A");
+        let field_current_label = Label::new(screen, "A")?;
         field_current_label
             .x(228)
             .width(50)
-            .text("-0.0A")
+            .text("-0.0A")?
             .text_align(LV_TEXT_ALIGN_RIGHT as lv_text_align_t);
 
-        Widgets {
+        Ok(Widgets {
             meter,
             field_voltage_bar,
             field_current_bar,
             field_voltage_label,
             field_current_label,
-        }
+        })
     }
 
-    pub fn update(&mut self) -> Result<(), lvgl::Error> {
+    pub fn update(&mut self) -> Result<(), lvgl::WidgetError> {
         let current = PROCESS_DATA.bat_current.load(core::sync::atomic::Ordering::Relaxed);
         let field_voltage = PROCESS_DATA.field_voltage.load(core::sync::atomic::Ordering::Relaxed);
         let field_current = PROCESS_DATA.field_current.load(core::sync::atomic::Ordering::Relaxed);
@@ -105,7 +103,7 @@ impl<'a> Widgets<'a> {
 
         REGULATOR_MODE.lock(|rm| {
             let rm: &String<RM_LEN> = &rm.borrow();
-            self.meter.set_state(rm);
+            self.meter.set_state(rm).ok();
         });
 
         Ok(())
@@ -133,7 +131,7 @@ impl<'a> Widgets<'a> {
 // }
 
 #[embassy_executor::task]
-pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
+pub async fn ui_task(mut display_driver: DisplayDriver) {
     unsafe {
         // initialize LVGL
         lv_init();
@@ -141,8 +139,11 @@ pub async fn ui_task(mut display_driver: DisplayDriver) -> ! {
         lvgl_disp_init(&display_driver as *const DisplayDriver as *mut c_void);
 
         // Create the widgets
-        let widgets = Widgets::create();
-        let widgets = WIDGETS.init(widgets);
+        let Ok(mut widgets) = Widgets::create() else
+        {
+            warn!("Could not create LVGL widgets, disabling UI");
+            return;
+        };
 
         // UI loop
         lv_timer_handler(); // first rendering takes a long time, so do it once befor turing on the backlight
