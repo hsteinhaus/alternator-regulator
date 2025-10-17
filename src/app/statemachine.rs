@@ -1,14 +1,26 @@
+use crate::app::control::Controller;
+use crate::app::shared::{ButtonEvent, RegulatorEvent, RpmEvent, CONTROLLER, PROCESS_DATA, REGULATOR_MODE, RM_LEN};
+use embassy_sync::{
+    blocking_mutex::raw::CriticalSectionRawMutex,
+    channel::{Channel, Receiver, Sender},
+};
 use heapless::{format, String};
 use libm::{fmaxf, fminf};
-use static_cell::make_static;
+use static_cell::{make_static, StaticCell};
 use statig::prelude::*;
-use crate::app::control::Controller;
-use super::ReceiverType;
-use crate::app::shared::{CONTROLLER, REGULATOR_MODE, RM_LEN};
-use crate::app::shared::PROCESS_DATA;
-use crate::app::statemachine::{ButtonEvent, RegulatorEvent, RpmEvent};
 
-#[derive(Default)]
+const MAX_EVENTS: usize = 10;
+
+pub type SenderType = Sender<'static, CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+type ReceiverType = Receiver<'static, CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+type ChannelType = Channel<CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+
+pub fn prepare_channel() -> &'static mut ChannelType {
+    static EVENT_CHANNEL: StaticCell<ChannelType> = StaticCell::new();
+    EVENT_CHANNEL.init(Channel::new())
+}
+
+#[derive(Default, Debug)]
 pub struct RegulatorMode;
 
 #[state_machine(
@@ -18,6 +30,8 @@ pub struct RegulatorMode;
     after_transition = "Self::after_transition"
 )]
 impl RegulatorMode {
+    const DUMMY_STR: String<RM_LEN> = String::new();
+
     #[state]
     async fn startup(event: &RegulatorEvent) -> Outcome<State> {
         match event {
@@ -25,7 +39,6 @@ impl RegulatorMode {
             _ => Handled,
         }
     }
-
 
     #[state(entry_action = "enter_off")]
     async fn off(event: &RegulatorEvent) -> Outcome<State> {
@@ -66,7 +79,7 @@ impl RegulatorMode {
                 ButtonEvent::IncShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
-                        c.adjust_target_factor_inc(fminf(0.05*(*count as f32), 1.));
+                        c.adjust_target_factor_inc(fminf(0.05 * (*count as f32), 1.));
                     });
                     Handled
                 }
@@ -74,7 +87,7 @@ impl RegulatorMode {
                 ButtonEvent::DecShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
-                        c.adjust_target_factor_inc(fmaxf(-0.05*(*count as f32), -1.));
+                        c.adjust_target_factor_inc(fmaxf(-0.05 * (*count as f32), -1.));
                     });
                     Handled
                 }
@@ -117,11 +130,16 @@ impl RegulatorMode {
 impl RegulatorMode {
     async fn after_transition(&mut self, source: &State, target: &State, _context: &mut ()) {
         trace!("after_transition: {:?} -> {:?}", source, target);
-        let state_name: String<RM_LEN> = format!("{:?}", target).unwrap();
+        let state_name = format!(RM_LEN; "{:?}", target).unwrap_or_else(|_| Self::DUMMY_STR);
+        debug!("after_transition: {:?}", state_name);
+        // debug!(
+        //     "after_transition: {:?} -> {:?} -> {:?}",
+        //     source, target, state_name
+        // );
         REGULATOR_MODE.lock(|rm| {
             let rm: &mut String<RM_LEN> = &mut rm.borrow_mut();
             rm.clear();
-            rm.push_str(&state_name).unwrap();
+            rm.push_str(&state_name).unwrap_or_else(|_|());  // should never fail, as both strings are of RM_LEN
         });
     }
 }

@@ -1,5 +1,5 @@
-use crate::app::shared::{ProcessData, PROCESS_DATA, RPM_MIN};
-use crate::app::statemachine::{RegulatorEvent, RpmEvent, SenderType};
+use crate::app::shared::{ProcessData, RegulatorEvent, RpmEvent, PROCESS_DATA, RPM_MIN};
+use crate::app::statemachine::SenderType;
 use crate::board::driver::pcnt::PcntDriver;
 use crate::util::zc::detect_zero_crossing_with_hysteresis;
 use core::sync::atomic::Ordering;

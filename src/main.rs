@@ -35,8 +35,9 @@ use ui::ui_task;
 
 use app::control::controller_task;
 use app::logger::logger;
-use app::statemachine::regulator_mode::regulator_mode_task;
-use crate::app::statemachine::{RegulatorEvent, SenderType};
+use app::statemachine::regulator_mode_task;
+use crate::app::shared::{RegulatorEvent};
+use crate::app::statemachine::SenderType;
 use crate::fmt::Debug2Format;
 
 #[allow(dead_code)]

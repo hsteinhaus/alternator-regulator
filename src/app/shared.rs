@@ -118,3 +118,43 @@ impl fmt::Display for Setpoint {
         )
     }
 }
+
+#[allow(unused)]
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum TemperatureEvent {
+    Normal,
+    Warning,
+    Overheated,
+}
+
+#[allow(unused)]
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum RpmEvent {
+    Low,
+    HighIdle,
+    Normal,
+}
+
+#[allow(unused)]
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum ButtonEvent {
+    DecShort(usize),
+    DecLong,
+    OkShort(usize),
+    OkLong,
+    IncShort(usize),
+    IncLong,
+}
+
+#[allow(unused)]
+#[derive(Copy, Clone, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum RegulatorEvent {
+    Ready,
+    Rpm(RpmEvent),
+    Button(ButtonEvent),
+    Temperature(TemperatureEvent),
+}
