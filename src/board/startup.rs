@@ -129,7 +129,7 @@ impl Resources {
         let dma_rx_buf = DmaRxBuf::new(rx_descriptors, rx_buffer)?;
 
         let spi_config = SpiConfig::default()
-            .with_frequency(Rate::from_mhz(20))
+            .with_frequency(Rate::from_mhz(10))
             .with_mode(Mode::_0);
         let spi_bus = Spi::new(peripherals.SPI2, spi_config)?
             .with_sck(peripherals.GPIO18)
