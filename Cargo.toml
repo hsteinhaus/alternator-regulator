@@ -73,7 +73,7 @@ async-button = { version = "0.2.0" }
 thiserror-no-std = "2.0.2"
 statig = { version = "0.4.1", features = ["async"] }
 libm = "0.2.15"
-embedded-sdmmc = "0.9.0"
+embedded-sdmmc = { version = "0.9.0", default-features = false }
 
 
 [build-dependencies]
@@ -82,8 +82,8 @@ cc = "1.2.38"
 
 [features]
 default = [
-    "log-04",
-#    "defmt",
+#    "log-04",
+    "defmt",
 ]
 
 #! ### Logging Feature Flags
@@ -95,6 +95,7 @@ log-04 = [
     "esp-println/log-04",
     "esp-println/colors",
     "esp-println/timestamp",
+    "embedded-sdmmc/log",
 ]
 
 ## Enable logging output using `defmt` and implement `defmt::Format` on certain types.
@@ -123,6 +124,7 @@ defmt = [
     "async-button/defmt",
     "bt-hci/defmt",
     "trouble-host/defmt",
+    "embedded-sdmmc/defmt-log",
 ]
 
 [profile.dev]
