@@ -10,8 +10,6 @@
     holding buffers for the duration of a data transfer."
 )]
 
-extern crate alloc;
-
 // MUST be the first module
 mod fmt;
 
@@ -19,6 +17,9 @@ mod app;
 mod board;
 mod ui;
 mod util;
+
+
+extern crate alloc;
 
 use esp_backtrace as _;
 use esp_println as _;
@@ -61,8 +62,10 @@ impl Callbacks for CpuLoadHooks {
 #[allow(dead_code)]
 fn main() -> ! {
     #[cfg(feature = "log-04")]
-    esp_println::logger::init_logger(log_04::LevelFilter::Info);
-
+    {
+        use esp_println::logger::init_logger_from_env;
+        init_logger_from_env();
+    }
     let mut res = startup::Resources::initialize().unwrap_or_else(|err| {
         error!("critical error - startup failed: {:?}", Debug2Format(&err));
         loop {}
