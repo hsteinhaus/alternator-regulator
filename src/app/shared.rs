@@ -114,6 +114,26 @@ impl fmt::Display for ProcessData {
     }
 }
 
+impl LoggerMeta for ProcessData {
+    fn get_meta(&self) -> String<{ LINE_LEN }> {
+        format!(
+            LINE_LEN; "{};{};{};{};{};{};{};{};{};{};{}",
+            "RPM",
+            "Target",
+            "Field Current",
+            "Field Voltage",
+            "Bat Current",
+            "Bat Voltage",
+            "Input Voltage",
+            "Temperature",
+            "PPS Temperature",
+            "PPS Mode",
+            "BLE Rate",
+        )
+        .unwrap()
+    }
+}
+
 impl fmt::Display for Setpoint {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -124,6 +144,15 @@ impl fmt::Display for Setpoint {
             self.pps_enabled.load(Ordering::Relaxed),
             self.contactor_state.load(Ordering::Relaxed),
         )
+    }
+}
+
+impl LoggerMeta for Setpoint {
+    fn get_meta(&self) -> String<{ LINE_LEN }> {
+        format!(
+            LINE_LEN; "{};{};{};{}", "Field Current Limit", "Field Voltage Limit", "PPS Enabled", "Contactor State"
+        )
+        .unwrap()
     }
 }
 

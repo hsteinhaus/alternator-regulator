@@ -29,11 +29,13 @@ pub enum LoggerError {
     NoCardError(#[from] SdCardError),
 }
 
-struct Logger {
+struct DataLogger {
     volume_mgr: VolumeManagerType,
 }
 
-impl Logger {
+pub const LINE_LEN: usize = 800;
+
+impl DataLogger {
     const FN_LEN: usize = 5+1+3;
 
     pub async fn new(card: SdCardType) -> Result<Self, LoggerError> {
@@ -64,15 +66,21 @@ impl Logger {
         })?;
 
         let fname: String<{Self::FN_LEN}> = format!("{:05}.CSV", index + 1)?;
-        let f = dir.open_file_in_dir(fname.as_str(), Mode::ReadWriteCreateOrAppend)?;
-        Ok(Box::new(f))
+        let file = dir.open_file_in_dir(fname.as_str(), Mode::ReadWriteCreateOrAppend)?;
+
+        let line = format!({ LINE_LEN }; "{};{};{};;{}\n", "Timestamp", "Mode", PROCESS_DATA.get_meta(), SETPOINT.get_meta())?;
+        debug!("{:?}", Debug2Format(&line));
+        file.write(line.as_bytes())?;
+        file.flush()?;
+
+        Ok(Box::new(file))
     }
 
     pub async fn log<'a>(&self, file: &'a FileType<'a>) -> Result<(), LoggerError> {
         let now = embassy_time::Instant::now();
         let mut mode: String<RM_LEN> = String::new();
         REGULATOR_MODE.lock(|rm|mode.push_str(rm.borrow().as_str()))?;
-        let line: String<800> = format!("{};{};{};;{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT)?;
+        let line = format!({ LINE_LEN }; "{};{};{};;{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT)?;
         debug!("{:?}", Debug2Format(&line));
         file.write(line.as_bytes())?;
         file.flush()?;
@@ -82,7 +90,7 @@ impl Logger {
 
 #[embassy_executor::task]
 pub async fn logger(card: SdCardType) -> () {
-    let Ok(logger) = Logger::new(card).await else {
+    let Ok(logger) = DataLogger::new(card).await else {
         warn!("Could not init SD card, disabling CSV logger");
         return;
     };
@@ -113,4 +121,8 @@ impl TimeSource for EmbassyTimeSource {
             seconds: (secs % 60) as u8,
         }
     }
+}
+
+pub trait LoggerMeta {
+    fn get_meta(&self) -> String<LINE_LEN>;
 }
