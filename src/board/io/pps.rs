@@ -17,6 +17,9 @@ pub async fn read_pps(pps: &mut PpsDriver) {
     pps.get_temperature().await
         .and_then(|t| Ok(PROCESS_DATA.pps_temperature.store(t, Ordering::Relaxed)))
         .ok();
+    pps.get_input_voltage().await
+        .and_then(|v| Ok(PROCESS_DATA.input_voltage.store(v, Ordering::Relaxed)))
+        .ok();
     pps.get_running_mode().await
         .and_then(|m| Ok(PROCESS_DATA.pps_mode.store(m as u8, Ordering::Relaxed)))
         .ok();

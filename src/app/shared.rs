@@ -1,12 +1,14 @@
-use super::control::Controller;
 use atomic_float::AtomicF32;
 use core::cell::RefCell;
 use core::fmt;
 use core::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use embassy_sync::blocking_mutex::raw::CriticalSectionRawMutex;
 use embassy_sync::blocking_mutex::Mutex;
-use heapless::String;
+use heapless::{format, String};
 use num_derive::{FromPrimitive, ToPrimitive};
+
+use super::control::Controller;
+use crate::app::logger::{LoggerMeta, LINE_LEN};
 
 pub static CONTROLLER: Mutex<CriticalSectionRawMutex, RefCell<Controller>> =
     Mutex::new(RefCell::new(Controller::new()));
@@ -15,11 +17,11 @@ pub const RM_LEN: usize = 10;
 pub static REGULATOR_MODE: Mutex<CriticalSectionRawMutex, RefCell<String<RM_LEN>>> =
     Mutex::new(RefCell::new(String::new()));
 
-pub const MAX_FIELD_CURRENT: f32 = 3.0;        // A
-pub const MAX_FIELD_VOLTAGE: f32 = 20.0;  // V
+pub const MAX_FIELD_CURRENT: f32 = 3.0; // A
+pub const MAX_FIELD_VOLTAGE: f32 = 20.0; // V
 
-pub const RPM_MIN: usize = 500;   // rpm (engine)
-pub const RPM_MAX: usize = 4500;  // rpm (engine)
+pub const RPM_MIN: usize = 500; // rpm (engine)
+pub const RPM_MAX: usize = 4500; // rpm (engine)
 
 #[repr(u8)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -49,6 +51,7 @@ pub struct ProcessData {
     pub temperature: AtomicF32,
     pub bat_current: AtomicF32,
     pub bat_voltage: AtomicF32,
+    pub input_voltage: AtomicF32,
     pub field_voltage: AtomicF32,
     pub field_current: AtomicF32,
     pub pps_temperature: AtomicF32,
@@ -64,6 +67,7 @@ pub static PROCESS_DATA: ProcessData = ProcessData {
     temperature: AtomicF32::new(f32::NAN),
     bat_current: AtomicF32::new(f32::NAN),
     bat_voltage: AtomicF32::new(f32::NAN),
+    input_voltage: AtomicF32::new(f32::NAN),
     field_voltage: AtomicF32::new(f32::NAN),
     field_current: AtomicF32::new(f32::NAN),
     pps_temperature: AtomicF32::new(f32::NAN),
@@ -94,13 +98,14 @@ impl fmt::Display for ProcessData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{};{};{};{};{};{};{};{};{};{}",
+            "{};{};{};{};{};{};{};{};{};{};{}",
             self.rpm.load(Ordering::Relaxed),
             self.target_factor.load(Ordering::Relaxed),
             self.field_current.load(Ordering::Relaxed),
             self.field_voltage.load(Ordering::Relaxed),
             self.bat_current.load(Ordering::Relaxed),
             self.bat_voltage.load(Ordering::Relaxed),
+            self.input_voltage.load(Ordering::Relaxed),
             self.temperature.load(Ordering::Relaxed),
             self.pps_temperature.load(Ordering::Relaxed),
             self.pps_mode.load(Ordering::Relaxed),
