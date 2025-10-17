@@ -24,6 +24,9 @@ pub enum LoggerError {
 
     #[error("Format error: {0}")]
     Format(#[from] core::fmt::Error),
+
+    #[error("SD card not present")]
+    NoCardError(#[from] SdCardError),
 }
 
 struct Logger {
@@ -33,17 +36,11 @@ struct Logger {
 impl Logger {
     const FN_LEN: usize = 5+1+3;
 
-    pub async fn new(card: SdCardType) -> Self {
-        let mut ticker = Ticker::every(Duration::from_secs(1));
-        let size = loop {
-            if let Ok(size) = card.num_bytes() {
-                break size;
-            }
-            ticker.next().await;
-        };
+    pub async fn new(card: SdCardType) -> Result<Self, LoggerError> {
+        let size = card.num_bytes()?;
         info!("SD card size: {:?}", size);
         let volume_mgr = VolumeManager::new(card, EmbassyTimeSource::default());
-        Self { volume_mgr }
+        Ok(Self { volume_mgr })
     }
 
     pub async fn open(&self) -> Result<Box<FileType<'_>>, LoggerError> {
@@ -85,9 +82,12 @@ impl Logger {
 
 #[embassy_executor::task]
 pub async fn logger(card: SdCardType) -> () {
-    let logger = Logger::new(card).await;
+    let Ok(logger) = Logger::new(card).await else {
+        warn!("Could not init SD card, disabling CSV logger");
+        return;
+    };
     let Ok(file) = logger.open().await else {
-        warn!("Could not open SD card, disabling CSV logger");
+        warn!("Could not log file, disabling CSV logger");
         return;
     };
 
