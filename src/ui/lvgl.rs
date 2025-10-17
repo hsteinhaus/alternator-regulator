@@ -3,6 +3,7 @@ use heapless::{format, CString, String};
 use heapless::c_string::ExtendError;
 use lvgl_rust_sys::*;
 use thiserror_no_std::Error;
+use crate::fmt::Debug2Format;
 
 #[derive(Error, Debug)]
 pub enum WidgetError {
@@ -21,6 +22,8 @@ impl defmt::Format for WidgetError {
     fn format(&self, f: defmt::Formatter) {
         match self {
             WidgetError::FormatError(fe) => defmt::write!(f, "FormatError: {:?}", Debug2Format(&fe)),
+            WidgetError::LvglNullPointer => defmt::write!(f, "Got NULL pointer from LVGL"),
+            WidgetError::ExtendError(ee) => defmt::write!(f, "Could not extend C string: {:?}", Debug2Format(&ee)),
         }
     }
 }
@@ -67,7 +70,8 @@ pub trait Widget {
 #[derive(Debug, Default)]
 pub struct Meter<'a> {
     handle: *mut lv_obj_t,
-    needle: *mut lv_meter_indicator_t,
+    current_needle: *mut lv_meter_indicator_t,
+    rpm_needle: *mut lv_meter_indicator_t,
     current_label: Label<'a>,
     state_label: Label<'a>,
 }
@@ -79,7 +83,7 @@ impl<'a> Widget for Meter<'a> {
 
     fn set_value(&mut self, value: f32) -> Result<(), WidgetError> {
         unsafe {
-            lv_meter_set_indicator_value(self.handle, self.needle, value as i32);
+            lv_meter_set_indicator_value(self.handle, self.current_needle, value as i32);
         }
         self.current_label.set_value(value)?;
         Ok(())
@@ -100,7 +104,10 @@ impl<'a> Meter<'a> {
             scale.angle_range = 240;
             scale.rotation = 150;
 
-            let needle = lv_meter_add_needle_line(meter, scale, 5, lv_color_hex(0xff0000), -4)
+            let current_needle = lv_meter_add_needle_line(meter, scale, 5, lv_color_hex(0xff0000), -4)
+                .as_mut()
+                .ok_or(WidgetError::LvglNullPointer)?;
+            let rpm_needle = lv_meter_add_needle_line(meter, scale, 3, lv_color_hex(0xaaaaaa), -30)
                 .as_mut()
                 .ok_or(WidgetError::LvglNullPointer)?;
 
@@ -138,7 +145,7 @@ impl<'a> Meter<'a> {
             scale2.label_gap = 10;
 
             lv_obj_set_style_text_font(meter, &lv_font_montserrat_14, 0);
-            lv_meter_set_indicator_value(meter, needle, 42);
+            lv_meter_set_indicator_value(meter, current_needle, 42);
 
             // Create labels for the meter
             let current_label = Label::new(meter, "")?;
@@ -160,7 +167,8 @@ impl<'a> Meter<'a> {
             Ok(Meter {
                 handle: meter,
                 current_label,
-                needle,
+                current_needle,
+                rpm_needle,
                 state_label,
             })
         }
@@ -168,6 +176,13 @@ impl<'a> Meter<'a> {
 
     pub fn set_state(&mut self, state: &str) -> Result<&Self, WidgetError> {
         self.state_label.text(state)?;
+        Ok(self)
+    }
+
+    pub fn set_rpm(&mut self, rpm: f32) -> Result<&Self, WidgetError> {
+        unsafe {
+            lv_meter_set_indicator_value(self.handle, self.rpm_needle, (rpm / 100.) as i32);
+        }
         Ok(self)
     }
 }

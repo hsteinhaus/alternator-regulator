@@ -88,6 +88,7 @@ impl<'a> Widgets<'a> {
         let current = PROCESS_DATA.bat_current.load(core::sync::atomic::Ordering::Relaxed);
         let field_voltage = PROCESS_DATA.field_voltage.load(core::sync::atomic::Ordering::Relaxed);
         let field_current = PROCESS_DATA.field_current.load(core::sync::atomic::Ordering::Relaxed);
+        let rpm = PROCESS_DATA.rpm.load(core::sync::atomic::Ordering::Relaxed);
 
         if current.is_finite() {
             self.meter.set_value(current)?;
@@ -99,6 +100,9 @@ impl<'a> Widgets<'a> {
         if field_current.is_finite() {
             self.field_current_bar.set_value(field_current)?;
             self.field_current_label.set_value(field_current)?;
+        }
+        if rpm.is_finite() {
+            self.meter.set_rpm(rpm)?;
         }
 
         REGULATOR_MODE.lock(|rm| {
