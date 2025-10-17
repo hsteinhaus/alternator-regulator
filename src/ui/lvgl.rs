@@ -1,5 +1,4 @@
 use core::ffi::c_char;
-use defmt::Debug2Format;
 use heapless::{format, CString, String};
 use lvgl_rust_sys::*;
 use thiserror_no_std::Error;

@@ -82,8 +82,8 @@ cc = "1.2.38"
 
 [features]
 default = [
-#    "log-04",
-    "defmt",
+    "log-04",
+#    "defmt",
 ]
 
 #! ### Logging Feature Flags

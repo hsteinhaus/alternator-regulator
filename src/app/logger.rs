@@ -1,12 +1,12 @@
 use alloc::boxed::Box;
-use defmt::Debug2Format;
 use embassy_time::{Duration, Ticker};
 use embedded_sdmmc::{Error, File, Mode, SdCardError, TimeSource, Timestamp, VolumeIdx, VolumeManager};
 use heapless::{format, String};
 use thiserror_no_std::Error;
+
 use crate::app::shared::{PROCESS_DATA, REGULATOR_MODE, RM_LEN, SETPOINT};
 use crate::board::startup::SdCardType;
-
+use crate::fmt::Debug2Format;
 
 type FileType<'a> = File<'a, SdCardType, EmbassyTimeSource, 4, 4, 1>;
 type VolumeManagerType = VolumeManager<SdCardType, EmbassyTimeSource>;
@@ -76,7 +76,7 @@ impl Logger {
         let mut mode: String<RM_LEN> = String::new();
         REGULATOR_MODE.lock(|rm|mode.push_str(rm.borrow().as_str()))?;
         let line: String<800> = format!("{};{};{};;{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT)?;
-        debug!("{}", Debug2Format(&line));
+        debug!("{:?}", Debug2Format(&line));
         file.write(line.as_bytes())?;
         file.flush()?;
         Ok(())

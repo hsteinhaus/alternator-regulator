@@ -20,7 +20,6 @@ mod board;
 mod ui;
 mod util;
 
-use defmt::Debug2Format;
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::make_static;
@@ -38,6 +37,7 @@ use app::control::controller_task;
 use app::logger::logger;
 use app::statemachine::regulator_mode::regulator_mode_task;
 use crate::app::statemachine::{RegulatorEvent, SenderType};
+use crate::fmt::Debug2Format;
 
 #[allow(dead_code)]
 #[derive(Debug)]
