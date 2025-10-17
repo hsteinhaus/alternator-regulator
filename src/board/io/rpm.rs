@@ -42,6 +42,7 @@ pub async fn rpm_task(sender: SenderType, mut pcnt_driver: PcntDriver) -> ! {
 }
 
 impl ProcessData {
+    #[allow(dead_code)]
     pub fn rpm_is_normal(&self) -> bool {
         self.rpm.load(Ordering::Relaxed) > RPM_MIN as f32
     }

@@ -101,7 +101,7 @@ impl RegulatorMode {
 
     #[action]
     async fn enter_idle(&mut self) {
-        debug!("entering idle state");
+        info!("entering idle state");
         CONTROLLER.lock(|c| {
             let c: &mut Controller = &mut c.borrow_mut();
             c.stop_charging();
@@ -110,7 +110,7 @@ impl RegulatorMode {
 
     #[action]
     async fn enter_charging(&mut self) {
-        debug!("entering charging state");
+        info!("entering charging state");
         CONTROLLER.lock(|c| {
             let c: &mut Controller = &mut c.borrow_mut();
             c.start_charging();
@@ -119,7 +119,7 @@ impl RegulatorMode {
 
     #[action]
     async fn enter_off(&mut self) {
-        debug!("entering off state");
+        info!("entering off state");
         CONTROLLER.lock(|c| {
             let c: &mut Controller = &mut c.borrow_mut();
             c.stop_charging();
