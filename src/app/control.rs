@@ -3,8 +3,9 @@ use core::sync::atomic::Ordering;
 use embassy_time::{Duration, Ticker};
 use libm::{floorf, fmaxf};
 
-use crate::app::shared::{PpsSetMode, MAX_FIELD_CURRENT, CONTROLLER, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT};
-
+use crate::app::shared::{
+    PpsSetMode, CONTROLLER, MAX_FIELD_CURRENT, MAX_FIELD_VOLTAGE, PROCESS_DATA, RPM_MAX, RPM_MIN, SETPOINT,
+};
 
 #[derive(Debug)]
 pub struct Controller {

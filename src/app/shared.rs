@@ -205,3 +205,14 @@ pub enum RegulatorEvent {
     Button(ButtonEvent),
     Temperature(TemperatureEvent),
 }
+
+const MAX_EVENTS: usize = 10;
+
+pub type SenderType = Sender<'static, CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+pub type ReceiverType = Receiver<'static, CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+type ChannelType = Channel<CriticalSectionRawMutex, RegulatorEvent, MAX_EVENTS>;
+
+pub fn prepare_channel() -> &'static mut ChannelType {
+    static EVENT_CHANNEL: StaticCell<ChannelType> = StaticCell::new();
+    EVENT_CHANNEL.init(Channel::new())
+}

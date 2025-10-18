@@ -36,9 +36,9 @@ use ui::ui_task;
 
 use app::control::controller_task;
 use app::logger::logger;
-use app::statemachine::regulator_mode_task;
+use app::mode::regulator_mode_task;
 use crate::app::shared::{RegulatorEvent};
-use crate::app::statemachine::SenderType;
+use app::shared::SenderType;
 use crate::fmt::Debug2Format;
 
 #[allow(dead_code)]
@@ -72,7 +72,7 @@ fn main() -> ! {
     });
 
     info!("Embassy initialized!");
-    let channel = app::statemachine::prepare_channel();
+    let channel = app::shared::prepare_channel();
     let button_sender = channel.sender();
     let rpm_sender = channel.sender();
     let ready_sender = channel.sender();
