@@ -22,7 +22,7 @@ pub struct RegulatorMode;
 impl RegulatorMode {
     const DUMMY_STR: String<RM_LEN> = String::new();
 
-    /// Startup state - noop until the startup is complete
+    /// Startup state - no-op until the startup is complete
     #[state]
     async fn startup(event: &RegulatorEvent) -> Outcome<State> {
         match event {
@@ -49,11 +49,15 @@ impl RegulatorMode {
     async fn idle(event: &RegulatorEvent) -> Outcome<State> {
         match event {
             RegulatorEvent::Rpm(rpm) => match rpm {
+                // automatic transition by exceeding RPM_MIN
                 RpmEvent::Normal => Transition(State::charging()),
                 _ => Handled,
             },
             RegulatorEvent::Button(button) => match button {
+                // manual transition to charging by IncLong
                 ButtonEvent::IncLong => Transition(State::charging()),
+
+                // manual emergency stop by DecLong
                 ButtonEvent::OkShort(_) => Transition(State::off()),
                 _ => Handled,
             },
@@ -66,10 +70,12 @@ impl RegulatorMode {
     async fn charging(event: &RegulatorEvent) -> Outcome<State> {
         match event {
             RegulatorEvent::Rpm(rpm) => match rpm {
+                // automatic transition by falling below RPM_MIN
                 RpmEvent::Low => Transition(State::idle()),
                 _ => Handled,
             },
             RegulatorEvent::Button(button) => match button {
+                // manual setpoint control
                 ButtonEvent::IncShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
@@ -78,6 +84,7 @@ impl RegulatorMode {
                     Handled
                 }
 
+                // manual setpoint control
                 ButtonEvent::DecShort(count) => {
                     CONTROLLER.lock(|c| {
                         let c: &mut Controller = &mut c.borrow_mut();
@@ -85,7 +92,11 @@ impl RegulatorMode {
                     });
                     Handled
                 }
+
+                // manual transition to idle by DecLong
                 ButtonEvent::DecLong => Transition(State::idle()),
+
+                // manual emergency stop by DecLong
                 ButtonEvent::OkShort(_) => Transition(State::off()),
                 _ => Handled,
             },
@@ -122,6 +133,7 @@ impl RegulatorMode {
 }
 
 impl RegulatorMode {
+    /// update state name in UI
     async fn after_transition(&mut self, source: &State, target: &State, _context: &mut ()) {
         let state_name = format!(RM_LEN; "{:?}", target).unwrap_or_else(|_| Self::DUMMY_STR);
         trace!("after_transition: {:?} -> {:?}", source, target);
