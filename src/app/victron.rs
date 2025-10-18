@@ -82,7 +82,7 @@ impl VictronBLE {
                             .bat_current
                             .store(bm_state.battery_current_a, core::sync::atomic::Ordering::Relaxed);
                         PROCESS_DATA
-                            .soc
+                            .bat_soc
                             .store(bm_state.state_of_charge_pct, core::sync::atomic::Ordering::Relaxed);
                         Self::update_statistics();
                     }
