@@ -36,7 +36,7 @@ struct DataLogger {
 pub const LINE_LEN: usize = 800;
 
 impl DataLogger {
-    const FN_LEN: usize = 5+1+3;
+    const FN_LEN: usize = 5 + 1 + 3;
 
     pub async fn new(card: SdCardType) -> Result<Self, LoggerError> {
         let size = card.num_bytes()?;
@@ -65,10 +65,11 @@ impl DataLogger {
             }
         })?;
 
-        let fname: String<{Self::FN_LEN}> = format!("{:05}.CSV", index + 1)?;
+        let fname: String<{ Self::FN_LEN }> = format!("{:05}.CSV", index + 1)?;
         let file = dir.open_file_in_dir(fname.as_str(), Mode::ReadWriteCreateOrAppend)?;
 
-        let line = format!({ LINE_LEN }; "{};{};{};;{}\n", "Timestamp", "Mode", PROCESS_DATA.get_meta(), SETPOINT.get_meta())?;
+        let line =
+            format!({ LINE_LEN }; "{};{};{};;{}\n", "Timestamp", "Mode", PROCESS_DATA.get_meta(), SETPOINT.get_meta())?;
         debug!("{:?}", Debug2Format(&line));
         file.write(line.as_bytes())?;
         file.flush()?;
@@ -79,7 +80,7 @@ impl DataLogger {
     pub async fn log<'a>(&self, file: &'a FileType<'a>) -> Result<(), LoggerError> {
         let now = embassy_time::Instant::now();
         let mut mode: String<RM_LEN> = String::new();
-        REGULATOR_MODE.lock(|rm|mode.push_str(rm.borrow().as_str()))?;
+        REGULATOR_MODE.lock(|rm| mode.push_str(rm.borrow().as_str()))?;
         let line = format!({ LINE_LEN }; "{};{};{};;{}\n", now.as_millis() as u64, mode, PROCESS_DATA, SETPOINT)?;
         debug!("{:?}", Debug2Format(&line));
         file.write(line.as_bytes())?;

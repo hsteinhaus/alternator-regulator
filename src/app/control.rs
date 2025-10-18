@@ -9,10 +9,17 @@ use crate::app::shared::{
 
 #[derive(Debug)]
 pub struct Controller {
+    /// relative target factor (0.0 to 1.0)
     target: f32,
+
+    /// relative derating factor (0.0 to 1.0)
     derating: f32,
-    idle_active: bool,
-    load_active: bool,
+
+    /// idle field current IF0 is active to allow for RPM measurement
+    idle: bool,
+
+    /// charging in progress
+    charge: bool,
 }
 
 #[allow(dead_code)]
@@ -27,16 +34,10 @@ impl Controller {
         Self {
             derating: 1.,
             target: 0.,
-            idle_active: false,
-            load_active: false,
+            idle: false,
+            charge: false,
         }
     }
-
-    // pub fn adjust_target(&mut self, target: f32) {
-    //     assert!(target >= 0. && target <= 1.);
-    //     info!("adjusting target to {}", target);
-    //     self.target = target;
-    // }
 
     pub fn adjust_target_factor_inc(&mut self, target_inc: f32) {
         let mut target = self.target + target_inc;
@@ -56,45 +57,29 @@ impl Controller {
         self.derating = derating;
     }
 
-    pub fn update(&self) {
-        PROCESS_DATA.target_factor.store(self.target, Ordering::Relaxed);
-        let mut field_current = 0.;
-        if self.idle_active {
-            field_current += Self::IF0;
-            if self.load_active {
-                let _rpm = PROCESS_DATA.rpm.load(Ordering::Relaxed) as f32;
-                let rpm_factor = 1.0 /* * Self::lookup_rpm_factor(rpm)*/;
-                field_current += MAX_FIELD_CURRENT * rpm_factor * self.target * self.derating;
-            }
-        }
-        SETPOINT.field_current_limit.store(field_current, Ordering::Relaxed);
-
-    }
-
     pub fn start_idle(&mut self) {
         debug!("starting idle");
         SETPOINT.field_voltage_limit.store(MAX_FIELD_VOLTAGE, Ordering::Relaxed);
         SETPOINT.pps_enabled.store(PpsSetMode::On as u8, Ordering::Relaxed);
-        self.idle_active = true;
-        self.load_active = false;
+        self.idle = true;
+        self.charge = false;
         self.target = 0.;
-    }
-
-    pub fn stop(&mut self) {
-        debug!("stopping");
-        self.idle_active = false;
-        self.load_active = false;
-        SETPOINT.field_voltage_limit.store(0., Ordering::Relaxed);
-        SETPOINT.pps_enabled.store(PpsSetMode::Off as u8, Ordering::Relaxed);
     }
 
     pub fn start_charging(&mut self) {
         info!("starting charging");
-        self.idle_active = true;
-        self.load_active = true;
+        self.idle = true;
+        self.charge = true;
     }
 
-
+    pub fn stop(&mut self) {
+        debug!("stopping");
+        self.idle = false;
+        self.charge = false;
+        SETPOINT.field_voltage_limit.store(0., Ordering::Relaxed);
+        SETPOINT.pps_enabled.store(PpsSetMode::Off as u8, Ordering::Relaxed);
+    }
+    
     fn lookup_rpm_factor(rpm: f32) -> f32 {
         // Normalize RPM to array index (0.0 to RPM_ARRAY_SIZE-1)
         let index_rpm = rpm / Controller::RPM_STEP as f32; //
@@ -112,7 +97,6 @@ impl Controller {
     }
 
     const fn const_rpm_factor<const SIZE: usize>() -> [f32; SIZE] {
-
         // first guess: double RPM, double current
         const fn calc_rpm_factor(array_index: usize) -> f32 {
             let rpm_index = RPM_MIN / Controller::RPM_STEP;
@@ -128,6 +112,20 @@ impl Controller {
             i += 1;
         }
         tmp
+    }
+
+    fn update(&self) {
+        PROCESS_DATA.target_factor.store(self.target, Ordering::Relaxed);
+        let mut field_current = 0.;
+        if self.idle {
+            field_current += Self::IF0;
+            if self.charge {
+                let _rpm = PROCESS_DATA.rpm.load(Ordering::Relaxed) as f32;
+                let rpm_factor = 1.0 /* * Self::lookup_rpm_factor(rpm)*/;
+                field_current += MAX_FIELD_CURRENT * rpm_factor * self.target * self.derating;
+            }
+        }
+        SETPOINT.field_current_limit.store(field_current, Ordering::Relaxed);
     }
 }
 
@@ -169,7 +167,10 @@ mod tests {
 
     #[test]
     fn test_lookup_rpm_factor_below_min() {
-        assert_eq!(Controller::lookup_rpm_factor((RPM_MIN as f32) - 100.0), Controller::RPM_FACTOR[0]);
+        assert_eq!(
+            Controller::lookup_rpm_factor((RPM_MIN as f32) - 100.0),
+            Controller::RPM_FACTOR[0]
+        );
     }
 
     #[test]
