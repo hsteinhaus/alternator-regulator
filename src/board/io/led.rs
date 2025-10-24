@@ -16,6 +16,7 @@ impl LedResources<'static> {
     }
 }
 
+#[allow(dead_code)]
 pub struct Leds<'a> {
     pub core0: Output<'a>,
     pub core1: Output<'a>,

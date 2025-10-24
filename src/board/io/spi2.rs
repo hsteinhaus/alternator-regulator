@@ -1,7 +1,7 @@
 //! Display and sd card are tightly coupled by sharing the same SPI bus.
 //! This module therefore handles both in a common task to avoid unnecessary low-level/high-frequency synchronization.
 
-use embassy_executor::Spawner;
+use embassy_futures::join::join;
 use embedded_hal_bus::spi::RefCellDevice;
 use embedded_sdmmc::SdCard;
 use esp_hal::{
@@ -16,7 +16,7 @@ use thiserror_no_std::Error;
 use crate::app::logger::logger_loop;
 use crate::board::driver::display::{DisplayDriver, DisplayError};
 use crate::fmt::Debug2Format;
-use crate::ui::ui_task;
+use crate::ui::ui_loop;
 
 type SpiBusType = SpiDmaBus<'static, Async>;
 pub type SpiDeviceType<'a> = RefCellDevice<'a, SpiBusType, Output<'static>, Delay>;
@@ -104,7 +104,7 @@ impl Spi2Resources<'static> {
 
 
 #[embassy_executor::task]
-pub async fn spi2_task(spawner: Spawner, spi2_resources: Spi2Resources<'static>) -> () {
+pub async fn spi2_task(spi2_resources: Spi2Resources<'static>) -> () {
     let (sd_card, display) = match spi2_resources.into_devices() {
         Ok(drivers) => drivers,
         Err(err) => {
@@ -112,6 +112,5 @@ pub async fn spi2_task(spawner: Spawner, spi2_resources: Spi2Resources<'static>)
             return;
         }
     };
-    spawner.must_spawn(ui_task(display));
-    logger_loop(sd_card).await;
+    join(logger_loop(sd_card), ui_loop(display)).await;
 }

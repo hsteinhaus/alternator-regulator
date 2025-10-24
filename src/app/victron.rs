@@ -56,8 +56,8 @@ impl VictronBLE {
 
     pub fn new() -> Self {
         VictronBLE {
-            paired_key: &VictronBLE::VICTRON_DEVICES[1].key,
-            paired_mac: VictronBLE::VICTRON_DEVICES[1].bd_addr(),
+            paired_key: &VictronBLE::VICTRON_DEVICES[0].key,
+            paired_mac: VictronBLE::VICTRON_DEVICES[0].bd_addr(),
         }
     }
 

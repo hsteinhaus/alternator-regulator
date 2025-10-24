@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+#![feature(asm_experimental_arch)]
 #![feature(int_from_ascii)]
 #![feature(type_alias_impl_trait)]
 #![feature(impl_trait_in_assoc_type)]
@@ -18,7 +19,6 @@ mod board;
 mod ui;
 mod util;
 
-
 use esp_backtrace as _;
 use esp_println as _;
 use static_cell::make_static;
@@ -34,9 +34,10 @@ use esp_hal::{
     main,
     system::{CpuControl, Stack},
 };
-use esp_hal_embassy::{Callbacks, Executor};
+use esp_hal::interrupt::Priority;
+use esp_hal_embassy::{Callbacks, InterruptExecutor};
 
-use crate::board::io::spi2::spi2_task;
+use crate::board::io::spi2::{spi2_task};
 use app::control::controller_task;
 use app::mode::regulator_mode_task;
 use app::shared::{RegulatorEvent, SenderType};
@@ -71,7 +72,9 @@ fn main() -> ! {
 
     let peripherals = resources::initialize();
     let (led_resources, spi2_resources, pps_resources, button_resources, radio_resources, rpm_resources, system_resources) = resources::collect(peripherals);
-    esp_hal_embassy::init(system_resources.timer0);
+
+    esp_hal_embassy::init([system_resources.timer1_0, system_resources.timer1_1]);
+    let mut cpu_ctrl = CpuControl::new(system_resources.cpu_ctrl);
     info!("Embassy initialized!");
 
     let leds = led_resources.into_leds();
@@ -84,42 +87,38 @@ fn main() -> ! {
     let receiver = channel.receiver();
 
     // start APP core executor first, as running the PRO core executor will block
-    let mut cpu_ctrl = CpuControl::new(system_resources.cpu_ctrl);
+
+
+    let executor_core1 = make_static!(InterruptExecutor::new(system_resources.sw_int.software_interrupt1));
     let app_core_stack = make_static!(Stack::<8192>::new());
+
     let _guard = cpu_ctrl
         .start_app_core(app_core_stack, move || {
-            let executor_app = make_static!(Executor::new());
-            executor_app.run_with_callbacks(
-                |spawner_app| {
-                    // spawn FAST tasks on APP core
-                    spawner_app.must_spawn(button_task(button_resources, button_sender));
-                    spawner_app.must_spawn(rpm_task(rpm_resources, rpm_sender));
-                    spawner_app.must_spawn(controller_task());
-                    spawner_app.must_spawn(app_main(ready_sender));
-                    spawner_app.must_spawn(pps_task(pps_resources));
-                    spawner_app.must_spawn(regulator_mode_task(receiver));
-                },
-                CpuLoadHooks {
-                    core_id: 1,
-                    led_pin: leds.core1,
-                },
-            );
+            let spawner_app = executor_core1.start(Priority::Priority1);
+            // spawn FAST tasks on APP core
+            spawner_app.must_spawn(button_task(button_resources, button_sender));
+            spawner_app.must_spawn(rpm_task(rpm_resources, rpm_sender));
+            spawner_app.must_spawn(controller_task());
+            spawner_app.must_spawn(app_main(ready_sender));
+            spawner_app.must_spawn(pps_task(pps_resources));
+            spawner_app.must_spawn(regulator_mode_task(receiver));
+            loop {
+                // leds.core1.set_low();
+                unsafe { core::arch::asm!("waiti 0"); };
+                // leds.core1.set_high();
+            };
         })
         .expect("Critical - failed to start APP core");
 
-    // start PRO core executor
-    let executor_pro = make_static!(Executor::new());
-    executor_pro.run_with_callbacks(
-        |spawner_pro| {
-            spawner_pro.must_spawn(radio_task(radio_resources));
-            spawner_pro.must_spawn(spi2_task(spawner_pro.clone(), spi2_resources));
-            spawner_pro.must_spawn(pro_main());
-        },
-        CpuLoadHooks {
-            core_id: 0,
-            led_pin: leds.core0,
-        },
-    );
+    let executor_core0 = make_static!(InterruptExecutor::new(system_resources.sw_int.software_interrupt0));
+    let spawner_pro = executor_core0.start(Priority::Priority1);
+    spawner_pro.must_spawn(spi2_task(spi2_resources));
+    spawner_pro.must_spawn(pro_main());
+    spawner_pro.must_spawn(radio_task(radio_resources));
+
+    loop {
+        unsafe { core::arch::asm!("waiti 0"); };
+    }
 }
 
 #[embassy_executor::task]

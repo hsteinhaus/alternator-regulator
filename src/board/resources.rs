@@ -2,24 +2,24 @@
 
 use crate::board::io::button::ButtonResources;
 use crate::board::io::led::LedResources;
+use crate::board::io::pps::PpsResources;
+use crate::board::io::radio::RadioResources;
 use crate::board::io::rpm::RpmResoures;
 use crate::board::io::spi2::Spi2Resources;
 use esp_hal::dma::AnySpiDmaChannel;
 use esp_hal::gpio::AnyPin;
 use esp_hal::i2c::master::AnyI2c;
-use esp_hal::peripherals::Peripherals;
-use esp_hal::peripherals::CPU_CTRL;
+use esp_hal::peripherals::{Peripherals, CPU_CTRL};
 use esp_hal::spi::master::AnySpi;
 use esp_hal::{clock::CpuClock, peripherals, rng::Rng, timer::{timg::TimerGroup, AnyTimer}};
-use crate::board::io::radio::RadioResources;
-use crate::board::io::pps::PpsResources;
-
+use esp_hal::interrupt::software::SoftwareInterruptControl;
 
 #[allow(unused)]
 pub struct SystemResources<'a> {
-    pub timer0: AnyTimer<'a>,
-    pub timer1: AnyTimer<'a>,
-    pub timer2: AnyTimer<'a>,
+    pub sw_int: SoftwareInterruptControl<'a>,
+    pub timer0_1: AnyTimer<'a>,
+    pub timer1_0: AnyTimer<'a>,
+    pub timer1_1: AnyTimer<'a>,
     pub cpu_ctrl: CPU_CTRL<'a>,
 }
 
@@ -76,9 +76,10 @@ pub fn collect(peripherals: Peripherals) -> (LedResources<'static>, Spi2Resource
 
     let tg1 = TimerGroup::new(peripherals.TIMG1);
     let system_resources = SystemResources {
-        timer0: AnyTimer::from(tg0.timer1),
-        timer1: AnyTimer::from(tg1.timer0),
-        timer2: AnyTimer::from(tg1.timer1),
+        sw_int: SoftwareInterruptControl::new(peripherals.SW_INTERRUPT),
+        timer0_1: AnyTimer::from(tg0.timer1),
+        timer1_0: AnyTimer::from(tg1.timer0),
+        timer1_1: AnyTimer::from(tg1.timer1),
         cpu_ctrl: peripherals.CPU_CTRL,
     };
 
