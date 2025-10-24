@@ -31,7 +31,7 @@ impl Display for Error {
 }
 
 impl PcntDriver {
-    pub fn initialize(pcnt: PCNT<'static>, rpm_pin: Input<'static>) -> Result<Self, Error> {
+    pub fn new(pcnt: PCNT<'static>, rpm_pin: Input<'static>) -> Result<Self, Error> {
         // Initialize Pulse Counter (PCNT) unit with limits and filter settings
         let pcnt = Pcnt::new(pcnt);
         let u0 = pcnt.unit1;

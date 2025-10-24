@@ -2,7 +2,6 @@ use core::sync::atomic::Ordering;
 use embassy_time::{with_timeout, Duration, Instant, Ticker};
 use num_traits::FromPrimitive;
 use crate::app::shared::{PpsSetMode, PROCESS_DATA, SETPOINT};
-use crate::board::driver::analog::AdcDriverType;
 use crate::board::driver::pps::{PpsError as PpsError, PpsDriver};
 
 const PPS_LOOP_TIME_MS: u64 = 500;
@@ -51,9 +50,8 @@ pub async fn write_pps(pps: &mut PpsDriver) -> Result<(), PpsError> {
 }
 
 #[embassy_executor::task]
-pub async fn pps_task(mut adc: AdcDriverType, mut pps: PpsDriver) -> ! {
+pub async fn pps_task(mut pps: PpsDriver) -> ! {
     // owned here forever
-    let _adc = &mut adc;
     let pps = &mut pps;
     let mut ticker = Ticker::every(Duration::from_millis(PPS_LOOP_TIME_MS));
     loop {

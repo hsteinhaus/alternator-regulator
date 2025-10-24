@@ -10,6 +10,7 @@ pub struct AdcDriver<A, G> {
     pub pin: AdcPin<G, A>,
 }
 
+#[allow(unused)]
 impl<A, G> AdcDriver<A, G>
 where
     A: RegisterAccess + 'static,

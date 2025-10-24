@@ -112,7 +112,7 @@ fn main() -> ! {
         |spawner_pro| {
             spawner_pro.must_spawn(ble_scan_task(res.wifi_ble.ble_connector));
             spawner_pro.must_spawn(ui_task(res.display));
-            spawner_pro.must_spawn(pps_task(res.adc, res.pps));
+            spawner_pro.must_spawn(pps_task(res.pps));
             //            spawner_pro.must_spawn(state::state_task(receiver));
             spawner_pro.must_spawn(logger(res.sd_card));
             spawner_pro.must_spawn(pro_main());
