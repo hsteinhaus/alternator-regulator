@@ -1,8 +1,8 @@
-use esp_hal::rom::software_reset;
-
 pub mod driver;
 pub mod resources;
 pub mod io;
+
+use esp_hal::rom::software_reset;
 
 esp_bootloader_esp_idf::esp_app_desc!();
 

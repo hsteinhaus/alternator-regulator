@@ -54,7 +54,6 @@ impl Callbacks for CpuLoadHooks {
     fn before_poll(&mut self) {
         self.led_pin.set_high();
     }
-
     fn on_idle(&mut self) {
         self.led_pin.set_low();
     }
@@ -76,8 +75,6 @@ fn main() -> ! {
     info!("Embassy initialized!");
 
     let leds = led_resources.into_leds();
-    let (button_left, button_center, button_right) = button_resources.into_buttons();
-
     LedDebug::create(leds.user);
 
     let channel = app::shared::prepare_channel();
@@ -95,12 +92,7 @@ fn main() -> ! {
             executor_app.run_with_callbacks(
                 |spawner_app| {
                     // spawn FAST tasks on APP core
-                    spawner_app.must_spawn(button_task(
-                        button_sender,
-                        button_left,
-                        button_center,
-                        button_right,
-                    ));
+                    spawner_app.must_spawn(button_task(button_resources, button_sender));
                     spawner_app.must_spawn(rpm_task(rpm_resources, rpm_sender));
                     spawner_app.must_spawn(controller_task());
                     spawner_app.must_spawn(app_main(ready_sender));
@@ -136,15 +128,9 @@ async fn app_main(ready_sender: SenderType) -> ! {
     ready_sender.send(RegulatorEvent::Ready).await;
     Timer::after(Duration::from_millis(1000)).await;
 
-    let mut ticker = Ticker::every(Duration::from_millis(1000));
+    let mut ticker = Ticker::every(Duration::from_millis(60_000));
     loop {
-        // SETPOINT
-        //     .field_current_limit
-        //     .store(rng.random() as f32 / u32::MAX as f32 * 2., Ordering::Relaxed);
-        // SETPOINT
-        //     .field_voltage_limit
-        //     .store(rng.random() as f32 / u32::MAX as f32 * 20., Ordering::Relaxed);
-        // SETPOINT.pps_enabled.store(SetMode::On as u8, Ordering::Relaxed);
+        debug!("app_main alive");
         ticker.next().await;
     }
 }

@@ -8,11 +8,10 @@ use crate::app::shared::{ButtonEvent, RegulatorEvent};
 
 #[embassy_executor::task]
 pub async fn button_task(
+    button_resources: ButtonResources<'static>,
     sender: SenderType,
-    mut button_left: Button<Input<'static>>,
-    mut button_center: Button<Input<'static>>,
-    mut button_right: Button<Input<'static>>,
 ) -> ! {
+    let (mut button_left, mut button_center, mut button_right) = button_resources.into_buttons();
     loop {
         // decode button events
         let button_event = match select3(button_left.update(), button_center.update(), button_right.update()).await {
