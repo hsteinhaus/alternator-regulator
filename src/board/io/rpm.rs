@@ -1,15 +1,25 @@
+use core::sync::atomic::Ordering;
+use embassy_time::{Duration, Ticker};
+use esp_hal::gpio::{AnyPin, Input, InputConfig};
+use thiserror_no_std::Error;
+
 use crate::app::shared::SenderType;
 use crate::app::shared::{ProcessData, RegulatorEvent, RpmEvent, PROCESS_DATA, RPM_MIN};
 use crate::board::driver::pcnt::PcntDriver;
 use crate::util::zc::detect_zero_crossing_with_hysteresis;
-use crate::StartupError;
-use core::sync::atomic::Ordering;
-use embassy_time::{Duration, Ticker};
-use esp_hal::gpio::{AnyPin, Input, InputConfig};
+use crate::Debug2Format;
+
 
 const RPM_LOOP_TIME_MS: u64 = 100;
 const POLE_PAIRS: f32 = 6.;
 const PULLEY_RATIO: f32 = 53.7 / 128.2;
+
+#[derive(Debug, Error)]
+pub enum RpmError {
+    #[error("PCNT error: {0:?}")]
+    PcntError(#[from] crate::board::driver::pcnt::Error),
+}
+
 
 pub async fn read_rpm(pcnt_driver: &mut PcntDriver) -> f32 {
     let pulse_count = pcnt_driver.get_and_reset();
@@ -23,16 +33,22 @@ pub async fn read_rpm(pcnt_driver: &mut PcntDriver) -> f32 {
 }
 
 #[embassy_executor::task]
-pub async fn rpm_task(sender: SenderType, mut pcnt_driver: PcntDriver) -> ! {
+pub async fn rpm_task(rpm_resoures: RpmResoures<'static>, sender: SenderType) -> () {
     // take ref to avoid a move in the loop iteration (value is owned in this fn forever)
-    let pcnt_driver = &mut pcnt_driver;
+    let mut pcnt_driver = match rpm_resoures.into_driver() {
+        Ok(pcnt_driver) => pcnt_driver,
+        Err(err) => {
+            error!("critical error - PCNT startup failed: {:?}", Debug2Format(&err));
+            return;
+        },
+    };
 
     let mut above = false;
     let mut crossed;
 
     let mut ticker = Ticker::every(Duration::from_millis(RPM_LOOP_TIME_MS));
     loop {
-        let rpm = read_rpm(pcnt_driver).await;
+        let rpm = read_rpm(&mut pcnt_driver).await;
         (above, crossed) = detect_zero_crossing_with_hysteresis(rpm, RPM_MIN as f32, 0.05, above);
         if crossed {
             let event = if above { RpmEvent::Normal } else { RpmEvent::Low };
@@ -56,7 +72,7 @@ pub struct RpmResoures<'a> {
 }
 
 impl RpmResoures<'static> {
-    pub fn into_driver(self) -> Result<PcntDriver, StartupError> {
+    pub fn into_driver(self) -> Result<PcntDriver, RpmError> {
         let input = Input::new(self.pin, InputConfig::default().with_pull(esp_hal::gpio::Pull::Down));
         Ok(PcntDriver::new(self.pcnt, input)?)
     }

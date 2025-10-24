@@ -115,7 +115,6 @@ fn main() -> Result<(), StartupError> {
     let leds = led_resources.into_leds();
     let (sd_card, display) = spi2_resources.into_devices()?;
     let (button_left, button_center, button_right) = button_resources.into_buttons();
-    let pcnt = rpm_resources.into_driver()?;
     let wifi_driver = radio_resources.into_driver()?;
 
     LedDebug::create(leds.user);
@@ -141,7 +140,7 @@ fn main() -> Result<(), StartupError> {
                         button_center,
                         button_right,
                     ));
-                    spawner_app.must_spawn(rpm_task(rpm_sender, pcnt));
+                    spawner_app.must_spawn(rpm_task(rpm_resources, rpm_sender));
                     spawner_app.must_spawn(controller_task());
                     spawner_app.must_spawn(app_main(ready_sender));
                     spawner_app.must_spawn(pps_task(pps_resources));
