@@ -24,27 +24,23 @@ use esp_println as _;
 use static_cell::make_static;
 
 use board::io::button::button_task;
-use board::io::{radio::radio_task, pps::pps_task, rpm::rpm_task};
+use board::io::{pps::pps_task, radio::radio_task, rpm::rpm_task};
 use board::resources;
 use embassy_time::{Duration, Ticker, Timer};
 use esp_alloc::HeapStats;
 
 use esp_hal::{
-    dma::{DmaBufError, DmaError},
     gpio::Output,
     main,
     system::{CpuControl, Stack},
 };
 use esp_hal_embassy::{Callbacks, Executor};
-use thiserror_no_std::Error;
 
+use crate::board::io::spi2::spi2_task;
 use app::control::controller_task;
-use app::logger::logger;
 use app::mode::regulator_mode_task;
-use app::shared::{SenderType, RegulatorEvent};
-use board::driver::display::DisplayError;
+use app::shared::{RegulatorEvent, SenderType};
 use fmt::Debug2Format;
-use ui::ui_task;
 use util::led_debug::LedDebug;
 
 #[allow(dead_code)]
@@ -65,36 +61,9 @@ impl Callbacks for CpuLoadHooks {
 }
 
 
-#[derive(Debug, Error)]
-pub enum StartupError {
-    #[error("Display initialization failed: {0:?}")]
-    DisplayInitFailed(#[from] DisplayError),
-
-    #[error("DMA initialization failed: {0:?}")]
-    DmaInitFailed(#[from] DmaBufError),
-
-    #[error("DMA error: {0:?}")]
-    DmaError(#[from] DmaError),
-
-    #[error("SPI Master config error: {0:?}")]
-    SpiConfigError(#[from] esp_hal::spi::master::ConfigError),
-
-
-    #[error("Never happened")]
-    NeverHappened(#[from] core::convert::Infallible),
-}
-
 /// catch-all handler for critical startup errors
 #[main]
-fn startup() -> ! {
-    main().unwrap_or_else(|err| {
-        error!("Startup failed: {:?}", Debug2Format(&err));
-    });
-    loop {};
-}
-
-/// real main function
-fn main() -> Result<(), StartupError> {
+fn main() -> ! {
     #[cfg(feature = "log-04")]
     {
         use esp_println::logger::init_logger_from_env;
@@ -107,7 +76,6 @@ fn main() -> Result<(), StartupError> {
     info!("Embassy initialized!");
 
     let leds = led_resources.into_leds();
-    let (sd_card, display) = spi2_resources.into_devices()?;
     let (button_left, button_center, button_right) = button_resources.into_buttons();
 
     LedDebug::create(leds.user);
@@ -152,8 +120,7 @@ fn main() -> Result<(), StartupError> {
     executor_pro.run_with_callbacks(
         |spawner_pro| {
             spawner_pro.must_spawn(radio_task(radio_resources));
-            spawner_pro.must_spawn(ui_task(display));
-            spawner_pro.must_spawn(logger(sd_card));
+            spawner_pro.must_spawn(spi2_task(spawner_pro.clone(), spi2_resources));
             spawner_pro.must_spawn(pro_main());
         },
         CpuLoadHooks {

@@ -1,22 +1,45 @@
 //! Display and sd card are tightly coupled by sharing the same SPI bus.
 //! This module therefore handles both in a common task to avoid unnecessary low-level/high-frequency synchronization.
 
+use embassy_executor::Spawner;
 use embedded_hal_bus::spi::RefCellDevice;
 use embedded_sdmmc::SdCard;
 use esp_hal::{
     delay::Delay,
-    dma::AnySpiDmaChannel,
+    dma::{AnySpiDmaChannel, DmaBufError, DmaError},
     gpio::{AnyPin, Output},
     spi::master::{AnySpi, SpiDmaBus},
     Async,
 };
+use thiserror_no_std::Error;
 
-use crate::board::driver::display::DisplayDriver;
-use crate::StartupError;
+use crate::app::logger::logger_loop;
+use crate::board::driver::display::{DisplayDriver, DisplayError};
+use crate::fmt::Debug2Format;
+use crate::ui::ui_task;
 
 type SpiBusType = SpiDmaBus<'static, Async>;
 pub type SpiDeviceType<'a> = RefCellDevice<'a, SpiBusType, Output<'static>, Delay>;
 pub type SdCardType = SdCard<SpiDeviceType<'static>, Delay>;
+
+
+#[derive(Debug, Error)]
+pub enum Spi2Error {
+    #[error("Display initialization failed: {0:?}")]
+    DisplayInitFailed(#[from] DisplayError),
+
+    #[error("DMA initialization failed: {0:?}")]
+    DmaInitFailed(#[from] DmaBufError),
+
+    #[error("DMA error: {0:?}")]
+    DmaError(#[from] DmaError),
+
+    #[error("SPI Master config error: {0:?}")]
+    SpiConfigError(#[from] esp_hal::spi::master::ConfigError),
+
+    #[error("Never happened")]
+    NeverHappened(#[from] core::convert::Infallible),
+}
 
 pub struct Spi2Resources<'a> {
     pub spi2: AnySpi<'a>,
@@ -32,7 +55,7 @@ pub struct Spi2Resources<'a> {
 }
 
 impl Spi2Resources<'static> {
-    pub fn into_devices(self) -> Result<(SdCardType, DisplayDriver), StartupError> {
+    pub fn into_devices(self) -> Result<(SdCardType, DisplayDriver), Spi2Error> {
         use embedded_hal_bus::spi::RefCellDevice;
         use esp_hal::{
             delay::Delay,
@@ -77,4 +100,18 @@ impl Spi2Resources<'static> {
 
         Ok((sd_card, display,))
     }
+}
+
+
+#[embassy_executor::task]
+pub async fn spi2_task(spawner: Spawner, spi2_resources: Spi2Resources<'static>) -> () {
+    let (sd_card, display) = match spi2_resources.into_devices() {
+        Ok(drivers) => drivers,
+        Err(err) => {
+            error!("Failed to initialize SPI2 devices: {:?}", Debug2Format(&err));
+            return;
+        }
+    };
+    spawner.must_spawn(ui_task(display));
+    logger_loop(sd_card).await;
 }

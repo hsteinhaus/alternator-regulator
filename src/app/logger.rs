@@ -89,8 +89,7 @@ impl DataLogger {
     }
 }
 
-#[embassy_executor::task]
-pub async fn logger(card: SdCardType) -> () {
+pub async fn logger_loop(card: SdCardType) -> () {
     let Ok(logger) = DataLogger::new(card).await else {
         warn!("Could not init SD card, disabling CSV logger");
         return;
