@@ -9,7 +9,7 @@ use mipidsi::interface::SpiError;
 use static_cell::StaticCell;
 use thiserror_no_std::Error;
 
-type DisplayInterface<'a> = SpiInterface<'a, SpiDeviceType, Output<'a>>;
+type DisplayInterface<'a> = SpiInterface<'static, SpiDeviceType<'a>, Output<'a>>;
 type D = mipidsi::Display<DisplayInterface<'static>, ILI9342CRgb565, Output<'static>>;
 
 #[derive(Error, Debug)]
@@ -41,7 +41,7 @@ impl DisplayDriver {
 
 impl DisplayDriver {
     pub fn new(
-        spi_device: SpiDeviceType,
+        spi_device: SpiDeviceType<'static>,
         mut bl: Output<'static>,
         mut rst: Output<'static>,
         dc: Output<'static>,
