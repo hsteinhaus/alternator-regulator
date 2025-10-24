@@ -3,10 +3,12 @@ use core::sync::atomic::Ordering;
 use crate::app::shared::PROCESS_DATA;
 use crate::board::driver::analog::AdcDriverType;
 
-pub mod ble_scan;
 pub mod button;
+pub mod led;
 pub mod pps;
+pub mod radio;
 pub mod rpm;
+pub mod spi2;
 
 #[allow(dead_code)]
 pub async fn read_adc(adc: &mut AdcDriverType) {

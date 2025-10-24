@@ -1,7 +1,7 @@
 use esp_hal::rom::software_reset;
 
 pub mod driver;
-pub mod startup;
+pub mod resources;
 pub mod io;
 
 esp_bootloader_esp_idf::esp_app_desc!();

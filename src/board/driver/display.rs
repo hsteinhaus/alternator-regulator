@@ -1,13 +1,15 @@
 use core::convert::Infallible;
-use crate::board::startup::SpiDeviceType;
 use embedded_graphics::pixelcolor::Rgb565;
 use embedded_graphics::prelude::*;
 use embedded_graphics::primitives::Rectangle;
 use esp_hal::{delay::Delay, gpio::Output};
-use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
 use mipidsi::interface::SpiError;
+use mipidsi::{interface::SpiInterface, models::ILI9342CRgb565, Builder};
 use static_cell::StaticCell;
 use thiserror_no_std::Error;
+
+use crate::board::io::spi2::SpiDeviceType;
+
 
 type DisplayInterface<'a> = SpiInterface<'static, SpiDeviceType<'a>, Output<'a>>;
 type D = mipidsi::Display<DisplayInterface<'static>, ILI9342CRgb565, Output<'static>>;
@@ -18,7 +20,7 @@ pub enum DisplayError {
     InitFailed,
 
     #[error("Display draw failed: {0:?}")]
-//    DisplayError(#[from] mipidsi::interface::SpiError<embedded_hal_bus::spi::DeviceError<esp_hal::spi::Error, core::convert::Infallible>, core::convert::Infallible>),
+    //    DisplayError(#[from] mipidsi::interface::SpiError<embedded_hal_bus::spi::DeviceError<esp_hal::spi::Error, core::convert::Infallible>, core::convert::Infallible>),
     DisplayError(#[from] SpiError<embedded_hal_bus::spi::DeviceError<esp_hal::spi::Error, Infallible>, Infallible>),
 }
 

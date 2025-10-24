@@ -1,9 +1,11 @@
-use crate::app::shared::{ProcessData, RegulatorEvent, RpmEvent, PROCESS_DATA, RPM_MIN};
 use crate::app::shared::SenderType;
+use crate::app::shared::{ProcessData, RegulatorEvent, RpmEvent, PROCESS_DATA, RPM_MIN};
 use crate::board::driver::pcnt::PcntDriver;
 use crate::util::zc::detect_zero_crossing_with_hysteresis;
+use crate::StartupError;
 use core::sync::atomic::Ordering;
 use embassy_time::{Duration, Ticker};
+use esp_hal::gpio::{AnyPin, Input, InputConfig};
 
 const RPM_LOOP_TIME_MS: u64 = 100;
 const POLE_PAIRS: f32 = 6.;
@@ -45,5 +47,17 @@ impl ProcessData {
     #[allow(dead_code)]
     pub fn rpm_is_normal(&self) -> bool {
         self.rpm.load(Ordering::Relaxed) > RPM_MIN as f32
+    }
+}
+
+pub struct RpmResoures<'a> {
+    pub pcnt: esp_hal::peripherals::PCNT<'a>,
+    pub pin: AnyPin<'a>,
+}
+
+impl RpmResoures<'static> {
+    pub fn into_driver(self) -> Result<PcntDriver, StartupError> {
+        let input = Input::new(self.pin, InputConfig::default().with_pull(esp_hal::gpio::Pull::Down));
+        Ok(PcntDriver::new(self.pcnt, input)?)
     }
 }

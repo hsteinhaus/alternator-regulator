@@ -1,8 +1,10 @@
-use crate::app::shared::PpsRunningMode;
 use esp_hal::i2c::master::I2c;
 use esp_hal::Async;
 use num_traits::FromPrimitive;
 use thiserror_no_std::Error;
+
+use crate::app::shared::PpsRunningMode;
+
 
 #[allow(dead_code)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -57,7 +59,6 @@ pub enum ReadResult {
 }
 
 impl ReadCommand {
-
     fn get_read_command(&self) -> (u8, usize) {
         match self {
             ReadCommand::ModuleId => (0x0, 2),
@@ -74,7 +75,7 @@ impl ReadCommand {
         }
     }
 
-    fn evaluate_result(&self, buffer: &[u8;4]) -> Result<ReadResult, PpsError> {
+    fn evaluate_result(&self, buffer: &[u8; 4]) -> Result<ReadResult, PpsError> {
         match self {
             ReadCommand::ModuleId => Ok(ReadResult::ModuleId((buffer[1] as u16) << 8 | buffer[0] as u16)),
             ReadCommand::GetRunningMode => Ok(ReadResult::RunningMode(
@@ -91,10 +92,10 @@ impl ReadCommand {
     pub async fn receive_async(self, i2c: &mut I2cType, address: u8) -> Result<ReadResult, PpsError> {
         let (cmd, bytes_to_read) = self.get_read_command();
         let mut buffer = [0_u8; 4];
-        i2c.write_read_async(address, &[cmd], &mut buffer[..bytes_to_read]).await?;
+        i2c.write_read_async(address, &[cmd], &mut buffer[..bytes_to_read])
+            .await?;
         self.evaluate_result(&buffer)
     }
-
 }
 
 #[derive(Debug)]
@@ -106,7 +107,7 @@ enum WriteCommand {
 }
 
 impl WriteCommand {
-    fn get_write_command(&self, buffer: &mut [u8;5]) -> usize {
+    fn get_write_command(&self, buffer: &mut [u8; 5]) -> usize {
         match self {
             WriteCommand::ModuleEnable(enable) => {
                 buffer[0] = 0x04;
@@ -130,8 +131,7 @@ impl WriteCommand {
         debug!("send: {:?} to address 0x{:x}", self, address);
         let mut buffer = [0x0_u8; 5];
         let bytes_to_write = self.get_write_command(&mut buffer);
-        i2c
-            .write(address, &buffer[..bytes_to_write])
+        i2c.write(address, &buffer[..bytes_to_write])
             .map_err(|_| PpsError::SyncI2cError)
     }
 
@@ -183,35 +183,50 @@ impl PpsDriver {
     }
 
     pub async fn get_running_mode(&mut self) -> Result<PpsRunningMode, PpsError> {
-        match ReadCommand::GetRunningMode.receive_async(&mut self.i2c, self.address).await? {
+        match ReadCommand::GetRunningMode
+            .receive_async(&mut self.i2c, self.address)
+            .await?
+        {
             ReadResult::RunningMode(mode) => Ok(mode),
             _ => Err(PpsError::ResultInvalid),
         }
     }
 
     pub async fn get_voltage(&mut self) -> Result<f32, PpsError> {
-        match ReadCommand::ReadbackVoltage.receive_async(&mut self.i2c, self.address).await? {
+        match ReadCommand::ReadbackVoltage
+            .receive_async(&mut self.i2c, self.address)
+            .await?
+        {
             ReadResult::ReadbackVoltage(voltage) => Ok(voltage),
             _ => Err(PpsError::ResultInvalid),
         }
     }
 
     pub async fn get_current(&mut self) -> Result<f32, PpsError> {
-        match ReadCommand::ReadbackCurrent.receive_async(&mut self.i2c, self.address).await? {
+        match ReadCommand::ReadbackCurrent
+            .receive_async(&mut self.i2c, self.address)
+            .await?
+        {
             ReadResult::ReadbackCurrent(current) => Ok(current),
             _ => Err(PpsError::ResultInvalid),
         }
     }
 
     pub async fn get_temperature(&mut self) -> Result<f32, PpsError> {
-        match ReadCommand::GetTemperature.receive_async(&mut self.i2c, self.address).await? {
+        match ReadCommand::GetTemperature
+            .receive_async(&mut self.i2c, self.address)
+            .await?
+        {
             ReadResult::Temperature(temp) => Ok(temp),
             _ => Err(PpsError::ResultInvalid),
         }
     }
 
     pub async fn get_input_voltage(&mut self) -> Result<f32, PpsError> {
-        match ReadCommand::GetInputVoltage.receive_async(&mut self.i2c, self.address).await? {
+        match ReadCommand::GetInputVoltage
+            .receive_async(&mut self.i2c, self.address)
+            .await?
+        {
             ReadResult::InputVoltage(voltage) => Ok(voltage),
             _ => Err(PpsError::ResultInvalid),
         }

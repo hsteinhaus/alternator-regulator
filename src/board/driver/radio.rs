@@ -26,8 +26,7 @@ pub struct WifiDriver {
 impl WifiDriver {
     pub fn new(wifi: WIFI<'static>, bt: BT<'static>, timer: AnyTimer<'static>, rng: Rng) -> Result<Self, WifiError> {
         let wifi_init = make_static!(esp_wifi::init(timer, rng)?);
-        let (_wifi_controller, _interfaces) =
-            esp_wifi::wifi::new(wifi_init, wifi)?;
+        let (_wifi_controller, _interfaces) = esp_wifi::wifi::new(wifi_init, wifi)?;
         let ble_connector = BleConnector::new(wifi_init, bt);
 
         Ok(Self {

@@ -1,7 +1,10 @@
 use embassy_time::{Duration, Timer};
-use esp_hal::analog::adc::{Adc, AdcChannel, AdcConfig, AdcPin, Attenuation, RegisterAccess};
-use esp_hal::gpio::AnalogPin;
-use esp_hal::{peripherals, Blocking};
+use esp_hal::{
+    analog::adc::{Adc, AdcChannel, AdcConfig, AdcPin, Attenuation, RegisterAccess},
+    gpio::AnalogPin,
+    peripherals, Blocking,
+};
+
 
 pub type AdcDriverType = AdcDriver<peripherals::ADC2<'static>, peripherals::GPIO26<'static>>;
 

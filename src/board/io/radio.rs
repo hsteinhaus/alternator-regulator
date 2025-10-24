@@ -2,10 +2,17 @@ use bt_hci::cmd::le::LeSetScanParams;
 use bt_hci::controller::ControllerCmdSync;
 use embassy_futures::join::join;
 use embassy_time::{Duration, Timer};
+use esp_hal::{
+    peripherals::{BT, WIFI},
+    rng::Rng,
+    timer::AnyTimer,
+};
 use esp_wifi::ble::controller::BleConnector;
 use trouble_host::prelude::*;
 
 use crate::app::victron::VictronBLE;
+use crate::board::driver::radio::WifiDriver;
+use crate::StartupError;
 
 /// Max number of connections
 const CONNECTIONS_MAX: usize = 3;
@@ -58,4 +65,17 @@ where
 pub async fn ble_scan_task(transport: BleConnector<'static>) {
     let controller = ExternalController::<_, 20>::new(transport);
     run(controller).await;
+}
+
+pub struct RadioResources<'a> {
+    pub rng: Rng,
+    pub wifi: WIFI<'a>,
+    pub bt: BT<'a>,
+    pub timer: AnyTimer<'a>,
+}
+
+impl RadioResources<'static> {
+    pub fn into_driver(self) -> Result<WifiDriver, StartupError> {
+        Ok(WifiDriver::new(self.wifi, self.bt, self.timer, self.rng)?)
+    }
 }

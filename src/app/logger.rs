@@ -5,7 +5,7 @@ use heapless::{format, String};
 use thiserror_no_std::Error;
 
 use crate::app::shared::{PROCESS_DATA, REGULATOR_MODE, RM_LEN, SETPOINT};
-use crate::board::startup::SdCardType;
+use crate::board::io::spi2::SdCardType;
 use crate::fmt::Debug2Format;
 
 type FileType<'a> = File<'a, SdCardType, EmbassyTimeSource, 4, 4, 1>;
