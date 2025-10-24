@@ -24,7 +24,7 @@ use esp_println as _;
 use static_cell::make_static;
 
 use board::io::button::button_task;
-use board::io::{radio::ble_scan_task, pps::pps_task, rpm::rpm_task};
+use board::io::{radio::radio_task, pps::pps_task, rpm::rpm_task};
 use board::resources;
 use embassy_time::{Duration, Ticker, Timer};
 use esp_alloc::HeapStats;
@@ -43,7 +43,6 @@ use app::logger::logger;
 use app::mode::regulator_mode_task;
 use app::shared::{SenderType, RegulatorEvent};
 use board::driver::display::DisplayError;
-use board::driver::radio::WifiError;
 use fmt::Debug2Format;
 use ui::ui_task;
 use util::led_debug::LedDebug;
@@ -80,11 +79,6 @@ pub enum StartupError {
     #[error("SPI Master config error: {0:?}")]
     SpiConfigError(#[from] esp_hal::spi::master::ConfigError),
 
-    #[error("PCNT error: {0:?}")]
-    PcntError(#[from] crate::board::driver::pcnt::Error),
-
-    #[error("Wifi error: {0:?}")]
-    WifiError(#[from] WifiError),
 
     #[error("Never happened")]
     NeverHappened(#[from] core::convert::Infallible),
@@ -115,7 +109,6 @@ fn main() -> Result<(), StartupError> {
     let leds = led_resources.into_leds();
     let (sd_card, display) = spi2_resources.into_devices()?;
     let (button_left, button_center, button_right) = button_resources.into_buttons();
-    let wifi_driver = radio_resources.into_driver()?;
 
     LedDebug::create(leds.user);
 
@@ -158,7 +151,7 @@ fn main() -> Result<(), StartupError> {
     let executor_pro = make_static!(Executor::new());
     executor_pro.run_with_callbacks(
         |spawner_pro| {
-            spawner_pro.must_spawn(ble_scan_task(wifi_driver.ble_connector));
+            spawner_pro.must_spawn(radio_task(radio_resources));
             spawner_pro.must_spawn(ui_task(display));
             spawner_pro.must_spawn(logger(sd_card));
             spawner_pro.must_spawn(pro_main());

@@ -7,12 +7,10 @@ use esp_hal::{
     rng::Rng,
     timer::AnyTimer,
 };
-use esp_wifi::ble::controller::BleConnector;
 use trouble_host::prelude::*;
 
 use crate::app::victron::VictronBLE;
-use crate::board::driver::radio::WifiDriver;
-use crate::StartupError;
+use crate::board::driver::radio::{WifiDriver, WifiError};
 
 /// Max number of connections
 const CONNECTIONS_MAX: usize = 3;
@@ -62,8 +60,15 @@ where
 }
 
 #[embassy_executor::task]
-pub async fn ble_scan_task(transport: BleConnector<'static>) {
-    let controller = ExternalController::<_, 20>::new(transport);
+pub async fn radio_task(radio_resources: RadioResources<'static>) -> () {
+    let driver = match radio_resources.into_driver() {
+        Ok(driver) => driver,
+        Err(err) => {
+            error!("critical error - WIFI startup failed: {:?}", crate::fmt::Debug2Format(&err));
+            return;
+        }
+    };
+    let controller = ExternalController::<_, 20>::new(driver.ble_connector);
     run(controller).await;
 }
 
@@ -75,7 +80,7 @@ pub struct RadioResources<'a> {
 }
 
 impl RadioResources<'static> {
-    pub fn into_driver(self) -> Result<WifiDriver, StartupError> {
+    pub fn into_driver(self) -> Result<WifiDriver, WifiError> {
         Ok(WifiDriver::new(self.wifi, self.bt, self.timer, self.rng)?)
     }
 }
