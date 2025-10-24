@@ -6,29 +6,25 @@ use thiserror_no_std::Error;
 use crate::app::shared::PpsRunningMode;
 
 
-#[allow(dead_code)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[derive(Debug, Error)]
 pub enum PpsError {
-    /// some other error
+    #[error("unknown error")]
     Unknown,
 
-    /// invalid result
+    #[error("unknown error")]
     ResultInvalid,
 
-    /// unsupported
+    #[error("unknown error")]
     Unsupported,
 
-    /// PPS module not present
-    ModuleNotFound,
+    #[error("I2C Master error: {0:?}")]
+    I2cError(#[from] esp_hal::i2c::master::ConfigError),
 
-    /// An error in the  underlying I²C system
-    FormatError,
-
-    /// async I2c operation failed
+    #[error("unknown error")]
     I2cMasterError(#[from] esp_hal::i2c::master::Error),
 
-    /// synchronous I2c operation failed
+    #[error("unknown error")]
     SyncI2cError,
 }
 

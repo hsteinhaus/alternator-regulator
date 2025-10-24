@@ -77,12 +77,6 @@ pub enum StartupError {
     #[error("DMA error: {0:?}")]
     DmaError(#[from] DmaError),
 
-    #[error("I2C Master error: {0:?}")]
-    I2cError(#[from] esp_hal::i2c::master::ConfigError),
-
-    #[error("PPS error: {0:?}")]
-    PpsError(#[from] crate::board::driver::pps::PpsError),
-
     #[error("SPI Master config error: {0:?}")]
     SpiConfigError(#[from] esp_hal::spi::master::ConfigError),
 
@@ -120,7 +114,6 @@ fn main() -> Result<(), StartupError> {
 
     let leds = led_resources.into_leds();
     let (sd_card, display) = spi2_resources.into_devices()?;
-    let pps = pps_resources.into_pps()?;
     let (button_left, button_center, button_right) = button_resources.into_buttons();
     let pcnt = rpm_resources.into_driver()?;
     let wifi_driver = radio_resources.into_driver()?;
@@ -151,6 +144,7 @@ fn main() -> Result<(), StartupError> {
                     spawner_app.must_spawn(rpm_task(rpm_sender, pcnt));
                     spawner_app.must_spawn(controller_task());
                     spawner_app.must_spawn(app_main(ready_sender));
+                    spawner_app.must_spawn(pps_task(pps_resources));
                     spawner_app.must_spawn(regulator_mode_task(receiver));
                 },
                 CpuLoadHooks {
@@ -167,7 +161,6 @@ fn main() -> Result<(), StartupError> {
         |spawner_pro| {
             spawner_pro.must_spawn(ble_scan_task(wifi_driver.ble_connector));
             spawner_pro.must_spawn(ui_task(display));
-            spawner_pro.must_spawn(pps_task(pps));
             spawner_pro.must_spawn(logger(sd_card));
             spawner_pro.must_spawn(pro_main());
         },
